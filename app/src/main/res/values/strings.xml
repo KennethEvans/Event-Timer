@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Event Timer</string>
+
+    <!-- Info/Help -->
+    <string name="help_url_not_found">Cannot find Help URL</string>
+    <string name="help_item">Help</string>
+    <string name="help_title">Help</string>
+    <string name="help_show_error">Error showing help</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="record">Record</string>
+    <string name="event_info">Time: %1$s\nStart Time: %2$s\nEndTime: %3$s\nEvents: %4$s\nElapsed Time: %5$s\n</string>
+
+    <!-- Utils -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="error">Error</string>
+    <string name="exception">Exception</string>
+    <string name="info">Info</string>
+    <string name="warning">Warning</string>
+</resources>
