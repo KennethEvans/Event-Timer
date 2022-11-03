@@ -11,6 +11,10 @@
     <string name="record">Record</string>
     <string name="event_info">Time: %1$s\nStart Time: %2$s\nEndTime: %3$s\nEvents: %4$s\nElapsed Time: %5$s\n</string>
 
+    <!-- Context Menu -->
+    <string name="rename_item">Rename</string>
+    <string name="delete_item">Delete</string>
+
     <!-- Utils -->
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>

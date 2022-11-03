@@ -1,38 +1,31 @@
 package net.kenevans.eventtimer;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity implements IConstants {
     public static final SimpleDateFormat dateFormat =
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
     TextView mTextViewEvent;
     private ListView mListView;
+    private int mListViewPosition = -1;
     private Menu mMenu;
     private Event mCurrentEvent;
     private Button mButtonStart;
@@ -78,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements IConstants {
         List<EventData> eventList  = new ArrayList<>();
         mCurrentEvent = new Event(new Date().getTime(), eventList);
         startTimer();
-
 
         // Ask for needed permissions
         requestPermissions();
@@ -284,15 +276,45 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     }
 
     private void updateInfo() {
-        if(mCurrentEvent != null) {
-            Log.d(TAG, this.getClass().getSimpleName() + ": updateInfo: "
-                    + "nEvents=" + mCurrentEvent.eventList.size());
-        }
+//        if(mCurrentEvent != null) {
+//            Log.d(TAG, this.getClass().getSimpleName() + ": updateInfo: "
+//                    + "nEvents=" + mCurrentEvent.eventList.size());
+//        }
         String infoStr = "";
         if( mCurrentEvent != null) {
             infoStr = mCurrentEvent.toString();
         }
          mTextViewEvent.setText(infoStr);
+    }
+
+    private void renameEventData(EventData eventData) {
+        Log.d(TAG, this.getClass().getSimpleName() + " renameEventData");
+        if (eventData == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        if(eventData.note != null) {
+            input.setText(eventData.note);
+        }
+        builder.setView(input);
+
+        builder.setTitle("Enter the note");
+        // Set up the buttons
+        builder.setPositiveButton(android.R.string.ok,
+                (dialog, which) -> {
+                    dialog.dismiss();
+                    eventData.note = String.valueOf(input.getText());
+                    resetListView();
+                });
+        builder.setNegativeButton(android.R.string.cancel,
+                (dialog, which) -> dialog.cancel());
+
+        builder.show();    }
+
+    private void deleteEventData(EventData eventData) {
+        Log.d(TAG, this.getClass().getSimpleName() + " deleteEventData");
+        if (eventData == null) return;
+        mCurrentEvent.eventList.remove(eventData);
+        resetListView();
     }
 
     /**
@@ -301,7 +323,7 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     private void resetListView() {
 //        Log.d(TAG, this.getClass().getSimpleName() + ": resetListView: "
 //                + "mListView=" + mListView);
-        if(mCurrentEvent == null || mCurrentEvent.eventList == null) {
+        if (mCurrentEvent == null || mCurrentEvent.eventList == null) {
             return;
         }
 
@@ -315,13 +337,28 @@ public class MainActivity extends AppCompatActivity implements IConstants {
             if (pos < 0 || pos >= mCurrentEvent.eventList.size()) {
                 return;
             }
-//            // Create the result Intent and include the fileName
-//            Intent intent = new Intent();
-//            intent.putExtra(EXTRA_IMAGE_URI,
-//                    mUriList.get(pos).uri.toString());
-//            // Set result and finish this Activity
-//            setResult(Activity.RESULT_OK, intent);
-//            finish();
+            EventData selectedEventData =
+                    (EventData) parent.getItemAtPosition(pos);
+            int checkedItem = 0;
+            String[] items = {"Rename", "Delete"};
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Pick an operation");
+            builder.setSingleChoiceItems(items, checkedItem,
+                    (dialogInterface, which) -> {
+                        if (which == 0) {
+                            renameEventData(selectedEventData);
+                        } else if (which == 1) {
+                            deleteEventData(selectedEventData);
+                        }
+                        dialogInterface.dismiss();
+                        resetListView();
+                    });
+            builder.setNegativeButton(R.string.cancel,
+                    (dialogInterface1, which1) -> dialogInterface1.dismiss());
+            AlertDialog alert = builder.create();
+            alert.setCanceledOnTouchOutside(false);
+            alert.show();
+
         });
     }
 
