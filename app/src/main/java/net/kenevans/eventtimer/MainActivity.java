@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     private ListView mListView;
     private int mListViewPosition = -1;
     private Menu mMenu;
-    private Event mCurrentEvent;
+    private Session mCurrentSession;
     private Button mButtonStart;
     private Button mButtonStop;
     private Button mButtonRecord;
@@ -37,14 +37,12 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
-            try{
+            try {
                 updateInfo();
                 resetListView();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Utils.excMsg(MainActivity.this, "Error in timer", ex);
-            }
-            finally{
+            } finally {
                 //also call the same runnable to call it at regular interval
                 mHandler.postDelayed(this, 1000);
             }
@@ -68,8 +66,8 @@ public class MainActivity extends AppCompatActivity implements IConstants {
         mButtonRecord.setOnClickListener(v -> record());
 
 
-        List<EventData> eventList  = new ArrayList<>();
-        mCurrentEvent = new Event(new Date().getTime(), eventList);
+        List<Event> eventList = new ArrayList<>();
+        mCurrentSession = new Session(new Date().getTime(), eventList);
         startTimer();
 
         // Ask for needed permissions
@@ -224,41 +222,41 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     }
 
     private void start() {
-        if(mCurrentEvent != null && !mCurrentEvent.isStopped()) {
-            mCurrentEvent.stop();
+        if (mCurrentSession != null && !mCurrentSession.isStopped()) {
+            mCurrentSession.stop();
             stopTimer();
         }
-        List<EventData> eventList  = new ArrayList<>();
-        mCurrentEvent = new Event(new Date().getTime(), eventList);
+        List<Event> eventList = new ArrayList<>();
+        mCurrentSession = new Session(new Date().getTime(), eventList);
         resetListView();
         startTimer();
     }
 
     private void stop() {
-        if(mCurrentEvent == null) {
+        if (mCurrentSession == null) {
             Utils.errMsg(this, "There is no current event");
             return;
         }
-        if(mCurrentEvent.isStopped()) {
+        if (mCurrentSession.isStopped()) {
             Utils.errMsg(this, "The current event is already stopped");
             return;
         }
-        mCurrentEvent.stop();
+        mCurrentSession.stop();
         resetListView();
         stopTimer();
     }
 
     private void record() {
-        if(mCurrentEvent == null) {
+        if (mCurrentSession == null) {
             Utils.errMsg(this, "There is no current event");
             return;
         }
-        if(mCurrentEvent.isStopped()) {
+        if (mCurrentSession.isStopped()) {
             Utils.errMsg(this, "The current event is stopped");
             return;
         }
-        mCurrentEvent.eventList.add(new EventData(new Date().getTime(),
-                "Event " + mCurrentEvent.eventList.size()));
+        mCurrentSession.addEvent(new Event(new Date().getTime(),
+                "Session " + mCurrentSession.getEventList().size()));
         resetListView();
     }
 
@@ -268,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     }
 
     private void stopTimer() {
-        if(!mTimerStarted ) {
+        if (!mTimerStarted) {
             return;
         }
         mHandler.removeCallbacks(mRunnable);
@@ -276,44 +274,45 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     }
 
     private void updateInfo() {
-//        if(mCurrentEvent != null) {
+//        if(mCurrentSession != null) {
 //            Log.d(TAG, this.getClass().getSimpleName() + ": updateInfo: "
-//                    + "nEvents=" + mCurrentEvent.eventList.size());
+//                    + "nEvents=" + mCurrentSession.eventList.size());
 //        }
         String infoStr = "";
-        if( mCurrentEvent != null) {
-            infoStr = mCurrentEvent.toString();
+        if (mCurrentSession != null) {
+            infoStr = mCurrentSession.toString();
         }
-         mTextViewEvent.setText(infoStr);
+        mTextViewEvent.setText(infoStr);
     }
 
-    private void renameEventData(EventData eventData) {
+    private void renameEventData(Event event) {
         Log.d(TAG, this.getClass().getSimpleName() + " renameEventData");
-        if (eventData == null) return;
+        if (event == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
-        if(eventData.note != null) {
-            input.setText(eventData.note);
+        if (event.getNote() != null) {
+            input.setText(event.getNote());
         }
         builder.setView(input);
 
-        builder.setTitle("Enter the note");
+        builder.setTitle("Enter the new note");
         // Set up the buttons
         builder.setPositiveButton(android.R.string.ok,
                 (dialog, which) -> {
                     dialog.dismiss();
-                    eventData.note = String.valueOf(input.getText());
+                    event.setNote(String.valueOf(input.getText()));
                     resetListView();
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
 
-        builder.show();    }
+        builder.show();
+    }
 
-    private void deleteEventData(EventData eventData) {
+    private void deleteEventData(Event event) {
         Log.d(TAG, this.getClass().getSimpleName() + " deleteEventData");
-        if (eventData == null) return;
-        mCurrentEvent.eventList.remove(eventData);
+        if (event == null) return;
+        mCurrentSession.removeEvent(this, event);
         resetListView();
     }
 
@@ -323,32 +322,32 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     private void resetListView() {
 //        Log.d(TAG, this.getClass().getSimpleName() + ": resetListView: "
 //                + "mListView=" + mListView);
-        if (mCurrentEvent == null || mCurrentEvent.eventList == null) {
+        if (mCurrentSession == null || mCurrentSession.getEventList() == null) {
             return;
         }
 
         // Set the ListAdapter
-        ArrayAdapter<EventData> fileList = new ArrayAdapter<>(this,
-                R.layout.row, mCurrentEvent.eventList);
+        ArrayAdapter<Event> fileList = new ArrayAdapter<>(this,
+                R.layout.row, mCurrentSession.getEventList());
         mListView.setAdapter(fileList);
         mListView.setSelection(mListView.getCount() - 1);
 
         mListView.setOnItemClickListener((parent, view, pos, id) -> {
-            if (pos < 0 || pos >= mCurrentEvent.eventList.size()) {
+            if (pos < 0 || pos >= mCurrentSession.getEventList().size()) {
                 return;
             }
-            EventData selectedEventData =
-                    (EventData) parent.getItemAtPosition(pos);
+            Event selectedEvent =
+                    (Event) parent.getItemAtPosition(pos);
             int checkedItem = 0;
-            String[] items = {"Rename", "Delete"};
+            String[] items = {"Edit Note", "Delete"};
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Pick an operation");
             builder.setSingleChoiceItems(items, checkedItem,
                     (dialogInterface, which) -> {
                         if (which == 0) {
-                            renameEventData(selectedEventData);
+                            renameEventData(selectedEvent);
                         } else if (which == 1) {
-                            deleteEventData(selectedEventData);
+                            deleteEventData(selectedEvent);
                         }
                         dialogInterface.dismiss();
                         resetListView();
@@ -365,9 +364,11 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     public void requestPermissions() {
         Log.d(TAG, "requestPermissions");
 //        BluetoothManager bluetoothManager =
-//                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+//                (BluetoothManager) getSystemService(Context
+//                .BLUETOOTH_SERVICE);
 //        if (bluetoothManager != null) {
-//            BluetoothAdapter mBluetoothAdapter = bluetoothManager.getAdapter();
+//            BluetoothAdapter mBluetoothAdapter = bluetoothManager
+//            .getAdapter();
 //            if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
 //                Intent enableBtIntent =
 //                        new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
