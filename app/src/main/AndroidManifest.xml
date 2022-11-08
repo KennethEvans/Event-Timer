@@ -14,13 +14,17 @@
         android:theme="@style/Theme.EventTimer"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".SessionsListActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EventTimer.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".SessionActivity"
+            android:exported="false">
         </activity>
     </application>
 

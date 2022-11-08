@@ -2,6 +2,7 @@ package net.kenevans.eventtimer;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,10 +21,11 @@ import java.util.Locale;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements IConstants {
+public class SessionActivity extends AppCompatActivity implements IConstants {
     public static final SimpleDateFormat dateFormat =
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
     TextView mTextViewEvent;
+    TextView mTextViewTime;
     private ListView mListView;
     private int mListViewPosition = -1;
     private Menu mMenu;
@@ -31,8 +33,10 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     private Button mButtonStart;
     private Button mButtonStop;
     private Button mButtonRecord;
+    private EventTimerDbAdapter mDbAdapter;
 
-    private Handler mHandler = new Handler();
+    // Set up the timer
+    private Handler mHandler = new Handler(Looper.getMainLooper());
     private boolean mTimerStarted;
     Runnable mRunnable = new Runnable() {
         @Override
@@ -41,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements IConstants {
                 updateInfo();
                 resetListView();
             } catch (Exception ex) {
-                Utils.excMsg(MainActivity.this, "Error in timer", ex);
+                Utils.excMsg(SessionActivity.this, "Error in timer", ex);
             } finally {
                 //also call the same runnable to call it at regular interval
                 mHandler.postDelayed(this, 1000);
@@ -49,14 +53,14 @@ public class MainActivity extends AppCompatActivity implements IConstants {
         }
     };
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.v(TAG, this.getClass().getSimpleName() + " onCreate");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_session);
+        mTextViewTime = findViewById(R.id.time);
         mTextViewEvent = findViewById(R.id.event);
-        mListView = findViewById(R.id.mainListView);
+        mListView = findViewById(R.id.sessionListView);
 
         mButtonStart = findViewById(R.id.buttonStart);
         mButtonStart.setOnClickListener(v -> start());
@@ -65,10 +69,43 @@ public class MainActivity extends AppCompatActivity implements IConstants {
         mButtonRecord = findViewById(R.id.buttonRecord);
         mButtonRecord.setOnClickListener(v -> record());
 
+        mTextViewEvent.setOnClickListener(v -> renameSession(mCurrentSession));
 
-        List<Event> eventList = new ArrayList<>();
-        mCurrentSession = new Session(new Date().getTime(), eventList);
-        startTimer();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        mDbAdapter = new EventTimerDbAdapter(this);
+        mDbAdapter.open();
+
+        Bundle extras = getIntent().getExtras();
+        long sessionId;
+
+        if (extras != null) {
+            sessionId = extras.getLong(SESSION_ID_CODE, -1);
+            if (sessionId < 0) {
+                Utils.errMsg(this, "SessionActivity received an invalid " +
+                        "session");
+            } else {
+                mCurrentSession = Session.getSessionFromDb(mDbAdapter,
+                        sessionId);
+            }
+        } else {
+            Utils.errMsg(this, "SessionActivity did not get a valid Session");
+            mCurrentSession = null;
+        }
+
+        if (getSupportActionBar() != null) {
+            String title = "Current Session";
+            if (mCurrentSession != null && mCurrentSession.getName() != null
+                    && mCurrentSession.getName().length() > 0) {
+                title = mCurrentSession.getName();
+            }
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle(title);
+        }
+
+//        startTimer();
 
         // Ask for needed permissions
         requestPermissions();
@@ -85,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     public void onResume() {
         Log.d(TAG, this.getClass().getSimpleName() + " onResume:");
         super.onResume();
+        resetListView();
         updateInfo();
 
 //        // Check if PREF_TREE_URI is valid and remove it if not
@@ -98,14 +136,14 @@ public class MainActivity extends AppCompatActivity implements IConstants {
 
     }
 
-    @Override
-    public void onBackPressed() {
-        // This seems to be necessary with Android 12
-        // Otherwise onDestroy is not called
-        Log.d(TAG, this.getClass().getSimpleName() + ": onBackPressed");
-        finish();
-        super.onBackPressed();
-    }
+//    @Override
+//    public void onBackPressed() {
+//        // This seems to be necessary with Android 12
+//        // Otherwise onDestroy is not called
+//        Log.d(TAG, this.getClass().getSimpleName() + ": onBackPressed");
+//        finish();
+//        super.onBackPressed();
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -136,6 +174,11 @@ public class MainActivity extends AppCompatActivity implements IConstants {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+        if (id == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
+
 //        if (id == R.id.pause) {
 //            if (mApi == null) {
 //                return true;
@@ -221,42 +264,51 @@ public class MainActivity extends AppCompatActivity implements IConstants {
         return false;
     }
 
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, this.getClass().getSimpleName() + ": onDestroy");
+        super.onDestroy();
+        if (mDbAdapter != null) {
+            mDbAdapter.close();
+            mDbAdapter = null;
+        }
+    }
+
     private void start() {
-        if (mCurrentSession != null && !mCurrentSession.isStopped()) {
-            mCurrentSession.stop();
+        Log.v(TAG, this.getClass().getSimpleName() + " start");
+        if (mCurrentSession == null) {
+            return;
+        }
+        if (!mTimerStarted) {
             stopTimer();
         }
-        List<Event> eventList = new ArrayList<>();
-        mCurrentSession = new Session(new Date().getTime(), eventList);
-        resetListView();
         startTimer();
+        resetListView();
+        updateInfo();
     }
 
     private void stop() {
+        Log.v(TAG, this.getClass().getSimpleName() + " stop");
         if (mCurrentSession == null) {
             Utils.errMsg(this, "There is no current event");
             return;
         }
-        if (mCurrentSession.isStopped()) {
-            Utils.errMsg(this, "The current event is already stopped");
-            return;
-        }
-        mCurrentSession.stop();
-        resetListView();
         stopTimer();
+        resetListView();
+        updateInfo();
     }
 
     private void record() {
         if (mCurrentSession == null) {
-            Utils.errMsg(this, "There is no current event");
+            Utils.errMsg(this, "There is no current session");
             return;
         }
-        if (mCurrentSession.isStopped()) {
-            Utils.errMsg(this, "The current event is stopped");
-            return;
-        }
-        mCurrentSession.addEvent(new Event(new Date().getTime(),
-                "Session " + mCurrentSession.getEventList().size()));
+        long now = new Date().getTime();
+        mCurrentSession.addEvent(mDbAdapter, mCurrentSession.getId(), now,
+                "@ " + dateFormat.format(now));
+        mCurrentSession = Session.getSessionFromDb(mDbAdapter,
+                mCurrentSession.getId());
+        updateInfo();
         resetListView();
     }
 
@@ -278,15 +330,24 @@ public class MainActivity extends AppCompatActivity implements IConstants {
 //            Log.d(TAG, this.getClass().getSimpleName() + ": updateInfo: "
 //                    + "nEvents=" + mCurrentSession.eventList.size());
 //        }
+        // Add the time then get the Session data
+        if (mTimerStarted) {
+            Date now = new Date();
+            mTextViewTime.setText(dateFormat.format(now));
+        } else {
+            mTextViewTime.setText(R.string.not_running_label);
+        }
         String infoStr = "";
         if (mCurrentSession != null) {
-            infoStr = mCurrentSession.toString();
+            infoStr += mCurrentSession.toString();
+        } else {
+            infoStr += "No session";
         }
         mTextViewEvent.setText(infoStr);
     }
 
-    private void renameEventData(Event event) {
-        Log.d(TAG, this.getClass().getSimpleName() + " renameEventData");
+    private void setEventNote(Event event) {
+        Log.d(TAG, this.getClass().getSimpleName() + " setEventNote");
         if (event == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
@@ -294,14 +355,47 @@ public class MainActivity extends AppCompatActivity implements IConstants {
             input.setText(event.getNote());
         }
         builder.setView(input);
-
         builder.setTitle("Enter the new note");
         // Set up the buttons
         builder.setPositiveButton(android.R.string.ok,
                 (dialog, which) -> {
                     dialog.dismiss();
-                    event.setNote(String.valueOf(input.getText()));
+                    event.setNote(mDbAdapter, String.valueOf(input.getText()));
                     resetListView();
+                });
+        builder.setNegativeButton(android.R.string.cancel,
+                (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void renameSession(Session session) {
+        Log.d(TAG, this.getClass().getSimpleName() + " setEventNote");
+        if (session == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        if (session.getName() != null) {
+            input.setText(session.getName());
+        }
+        builder.setView(input);
+
+        builder.setTitle("Enter the new name");
+        // Set up the buttons
+        builder.setPositiveButton(android.R.string.ok,
+                (dialog, which) -> {
+                    dialog.dismiss();
+                    session.setName(mDbAdapter,
+                            String.valueOf(input.getText()));
+                    resetListView();
+                    // Reset the title
+                    if (getSupportActionBar() != null) {
+                        String title = "Current Session";
+                        if (mCurrentSession != null && mCurrentSession.getName() != null
+                                && mCurrentSession.getName().length() > 0) {
+                            title = mCurrentSession.getName();
+                        }
+                        getSupportActionBar().setTitle(title);
+                    }
+
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
@@ -309,31 +403,67 @@ public class MainActivity extends AppCompatActivity implements IConstants {
         builder.show();
     }
 
-    private void deleteEventData(Event event) {
+    /***
+     * Deletes the given Event.
+     *
+     * @param event The event.
+     * @return True if successful else return false.
+     */
+    private boolean deleteEventData(Event event) {
         Log.d(TAG, this.getClass().getSimpleName() + " deleteEventData");
-        if (event == null) return;
-        mCurrentSession.removeEvent(this, event);
+        if (event == null) return false;
+        boolean retVal = mCurrentSession.removeEvent(mDbAdapter, event);
+        mCurrentSession = Session.getSessionFromDb(mDbAdapter,
+                mCurrentSession.getId());
+        updateInfo();
         resetListView();
+        return retVal;
     }
 
     /**
      * Resets the file list.
      */
     private void resetListView() {
-//        Log.d(TAG, this.getClass().getSimpleName() + ": resetListView: "
-//                + "mListView=" + mListView);
-        if (mCurrentSession == null || mCurrentSession.getEventList() == null) {
+        if (mCurrentSession == null) {
+            Log.d(TAG, this.getClass().getSimpleName() + ": resetListView: "
+                    + "mCurrentSession=null");
+        } else {
+            Log.d(TAG, this.getClass().getSimpleName() + ": resetListView: "
+                    + "nEvents=" + mCurrentSession.getEventList().size());
+        }
+        if (mCurrentSession == null) {
+            Log.d(TAG, "resetListView: mCurrentSession is null");
+            ArrayAdapter adapter = (ArrayAdapter) mListView.getAdapter();
+            if (adapter != null) {
+                adapter.clear();
+            }
+            return;
+        }
+        if (mCurrentSession.getEventList() == null) {
+            Log.d(TAG, "resetListView: mCurrentSession.getEventList() is null");
+            ArrayAdapter adapter = (ArrayAdapter) mListView.getAdapter();
+            if (adapter != null) {
+                adapter.clear();
+            }
             return;
         }
 
+        // Get the eventList as a copy and reverse it
+        List<Event> eventList = new ArrayList<>();
+        int nEvents = mCurrentSession.getEventList().size();
+        if (nEvents > 0) {
+            for (int i = nEvents - 1; i >= 0; i--) {
+                eventList.add(mCurrentSession.getEventList().get(i));
+            }
+        }
+
         // Set the ListAdapter
-        ArrayAdapter<Event> fileList = new ArrayAdapter<>(this,
-                R.layout.row, mCurrentSession.getEventList());
-        mListView.setAdapter(fileList);
-        mListView.setSelection(mListView.getCount() - 1);
+        ArrayAdapter<Event> adapter = new ArrayAdapter<>(this,
+                R.layout.row, eventList);
+        mListView.setAdapter(adapter);
 
         mListView.setOnItemClickListener((parent, view, pos, id) -> {
-            if (pos < 0 || pos >= mCurrentSession.getEventList().size()) {
+            if (pos < 0 || pos >= eventList.size()) {
                 return;
             }
             Event selectedEvent =
@@ -345,9 +475,13 @@ public class MainActivity extends AppCompatActivity implements IConstants {
             builder.setSingleChoiceItems(items, checkedItem,
                     (dialogInterface, which) -> {
                         if (which == 0) {
-                            renameEventData(selectedEvent);
+                            setEventNote(selectedEvent);
                         } else if (which == 1) {
-                            deleteEventData(selectedEvent);
+                            boolean res = deleteEventData(selectedEvent);
+                            if (!res) {
+                                Utils.errMsg(this, "Failed to remove the " +
+                                        "event");
+                            }
                         }
                         dialogInterface.dismiss();
                         resetListView();

@@ -4,6 +4,12 @@ plugins {
     id 'com.android.library' version '7.2.1' apply false
 }
 
+allprojects {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

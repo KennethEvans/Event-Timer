@@ -1,5 +1,12 @@
 <resources>
     <string name="app_name">Event Timer</string>
+    <string name="title_activity_sessions">Sessions</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="unnamed_session">Not Named</string>
+    <string name="floating_action_button_desc">Foating Action Button</string>
+    <string name="not_running_label">Not running</string>
+
 
     <!-- Info/Help -->
     <string name="help_url_not_found">Cannot find Help URL</string>
@@ -11,10 +18,6 @@
     <string name="record">Record</string>
     <string name="event_info">Time: %1$s\nStart Time: %2$s\nEndTime: %3$s\nEvents: %4$s\nElapsed Time: %5$s\n</string>
 
-    <!-- Context Menu -->
-    <string name="rename_item">Rename</string>
-    <string name="delete_item">Delete</string>
-
     <!-- Utils -->
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
@@ -22,4 +25,8 @@
     <string name="exception">Exception</string>
     <string name="info">Info</string>
     <string name="warning">Warning</string>
+
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s
+    </string>
 </resources>
