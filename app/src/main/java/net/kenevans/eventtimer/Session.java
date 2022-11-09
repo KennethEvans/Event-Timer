@@ -29,7 +29,7 @@ public class Session implements IConstants {
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
 
     private long mStartTime;
-    private long mStopTime = INVALID_TIME;
+    private long mEndTime = INVALID_TIME;
     private String mName = "";
     private List<Event> mEventList;
     private long mId = -1;
@@ -49,14 +49,14 @@ public class Session implements IConstants {
      *
      * @param dbAdapter The adapter.
      * @param startTime The start time.
-     * @param useDb Whether to store in the database or not.
+     * @param useDb     Whether to store in the database or not.
      */
     public Session(EventTimerDbAdapter dbAdapter, long startTime,
                    boolean useDb) {
         this.mStartTime = startTime;
         List<Event> eventList = new ArrayList<>();
         if (useDb) {
-            mId = dbAdapter.createSession(mStartTime, mStopTime, mName);
+            mId = dbAdapter.createSession(mStartTime, mEndTime, mName);
             mEventList = eventList;
             addEvent(dbAdapter, mId, startTime, "Start");
         } else {
@@ -75,13 +75,15 @@ public class Session implements IConstants {
      */
     public static Session getSessionFromDb(EventTimerDbAdapter dbAdapter,
                                            long sessionId) {
-        Cursor cursor;
+        Cursor cursor = null;
         try {
             cursor = dbAdapter.fetchSession(sessionId);
         } catch (Exception ex) {
             Log.d(TAG, "Failed to get Session from id=" + sessionId, ex);
+            if (cursor != null) cursor.close();
             return null;
         }
+        if (cursor == null) return null;
         int indexStartTime = cursor
                 .getColumnIndex(COL_START_TIME);
         int indexStopTime = cursor
@@ -106,7 +108,7 @@ public class Session implements IConstants {
         Session session = new Session(null, new Date().getTime(), false);
         session.mId = sessionId;
         session.mStartTime = startTime;
-        session.mStopTime = stopTime;
+        session.mEndTime = stopTime;
         session.mName = name;
 
         // Get events
@@ -148,8 +150,8 @@ public class Session implements IConstants {
 //        String timeStr = dateFormat.format(now);
         String startStr = (mStartTime != INVALID_TIME) ?
                 dateFormat.format(new Date(mStartTime)) : "";
-        String stopStr = (mStopTime != INVALID_TIME) ?
-                dateFormat.format(new Date(mStopTime)) : "";
+        String endStr = (mEndTime != INVALID_TIME) ?
+                dateFormat.format(new Date(mEndTime)) : "";
         String elapsedStr;
         if (mStartTime != INVALID_TIME) {
             long elapsedTime;
@@ -168,7 +170,7 @@ public class Session implements IConstants {
         return String.format(Locale.US, "Start Time: %s\n"
                         + "EndTime: %s\nEvents: %s\nElapsed Time: %s\n"
                         + "Name: %s",
-                startStr, stopStr, nEventsStr, elapsedStr, nameStr);
+                startStr, endStr, nEventsStr, elapsedStr, nameStr);
     }
 
     public void addEvent(EventTimerDbAdapter dbAdapter, long sessionId,
@@ -177,7 +179,7 @@ public class Session implements IConstants {
         long newEventId = dbAdapter.createEvent(time, note, sessionId);
         Event event = new Event(newEventId, sessionId, time, note);
         mEventList.add(event);
-        setStopTime(dbAdapter, time);
+        setEndTime(dbAdapter, time);
     }
 
     public boolean removeEvent(EventTimerDbAdapter dbAdapter, Event event) {
@@ -201,13 +203,13 @@ public class Session implements IConstants {
         dbAdapter.updateSessionStartTime(mId, mStartTime);
     }
 
-    public long getStopTime() {
-        return mStopTime;
+    public long getEndTime() {
+        return mEndTime;
     }
 
-    public void setStopTime(EventTimerDbAdapter dbAdapter, long stopTime) {
-        this.mStopTime = stopTime;
-        dbAdapter.updateSessionStopTime(mId, mStopTime);
+    public void setEndTime(EventTimerDbAdapter dbAdapter, long endTime) {
+        this.mEndTime = endTime;
+        dbAdapter.updateSessionEndTime(mId, mEndTime);
     }
 
     public String getName() {

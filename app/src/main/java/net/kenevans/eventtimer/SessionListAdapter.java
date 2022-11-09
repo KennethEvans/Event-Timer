@@ -188,8 +188,7 @@ public class SessionListAdapter extends BaseAdapter implements IConstants {
         int nEvents = session.getNEvents();
         String nEventsStr = "NA";
         if (nEvents != -1) {
-            nEventsStr = String.format(Locale.US, "%d",
-                    session.getNEvents());
+            nEventsStr = String.format(Locale.US, "%d", nEvents);
         }
         String elapsedStr = "NA";
         if (startTime.getTime() != INVALID_TIME) {
@@ -222,11 +221,11 @@ public class SessionListAdapter extends BaseAdapter implements IConstants {
     }
 
     /**
-     * Get a list of checked sessions.
+     * Get a list of sessions.
      *
      * @return List of sessions.
      */
-    private ArrayList<SessionDisplay> getSessions() {
+    public ArrayList<SessionDisplay> getSessions() {
         return mSessions;
     }
 
@@ -235,7 +234,7 @@ public class SessionListAdapter extends BaseAdapter implements IConstants {
      *
      * @return List of sessions.
      */
-    private ArrayList<SessionDisplay> getCheckedSessions() {
+    public ArrayList<SessionDisplay> getCheckedSessions() {
         ArrayList<SessionDisplay> checkedSessions = new ArrayList<>();
         for (SessionDisplay session : mSessions) {
             if (session.isChecked()) {

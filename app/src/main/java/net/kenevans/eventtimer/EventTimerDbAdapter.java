@@ -226,23 +226,23 @@ public class EventTimerDbAdapter implements IConstants {
         return mCursor;
     }
 
-    /**
-     * Return a Cursor positioned at the session that matches the given rowId
-     *
-     * @param rowId id of entry to retrieve.
-     * @return Cursor positioned to matching entry, if found.
-     * @throws SQLException if entry could not be found/retrieved.
-     */
-    public Cursor fetchEvent(long rowId, long sessionId) throws SQLException {
-        Cursor mCursor = mDb.query(true, DB_DATA_TABLE_EVENTS,
-                new String[]{COL_ID, COL_TIME, COL_NOTE, COL_SESSION_ID},
-                COL_ID + "=" + rowId + " AND " + COL_SESSION_ID + " = " + sessionId,
-                null, null, null, null, null);
-        if (mCursor != null) {
-            mCursor.moveToFirst();
-        }
-        return mCursor;
-    }
+//    /**
+//     * Return a Cursor positioned at the session that matches the given rowId
+//     *
+//     * @param rowId id of entry to retrieve.
+//     * @return Cursor positioned to matching entry, if found.
+//     * @throws SQLException if entry could not be found/retrieved.
+//     */
+//    public Cursor fetchEvent(long rowId, long sessionId) throws SQLException {
+//        Cursor mCursor = mDb.query(true, DB_DATA_TABLE_EVENTS,
+//                new String[]{COL_ID, COL_TIME, COL_NOTE, COL_SESSION_ID},
+//                COL_ID + "=" + rowId + " AND " + COL_SESSION_ID + " = " + sessionId,
+//                null, null, null, null, null);
+//        if (mCursor != null) {
+//            mCursor.moveToFirst();
+//        }
+//        return mCursor;
+//    }
 
     /**
      * Update the session using the details provided. The data to be updated is
@@ -291,7 +291,7 @@ public class EventTimerDbAdapter implements IConstants {
      * @param stopTime The stop time.
      * @return If rows were affected
      */
-    public boolean updateSessionStopTime(long rowId, long stopTime) {
+    public boolean updateSessionEndTime(long rowId, long stopTime) {
         ContentValues values = new ContentValues();
         values.put(COL_END_TIME, stopTime);
 
@@ -361,8 +361,8 @@ public class EventTimerDbAdapter implements IConstants {
      * updated is specified using the rowId, and it is altered to use the
      * values passed in.
      *
-     * @param rowId     The row id.
-     * @param note      The note.
+     * @param rowId The row id.
+     * @param note  The note.
      * @return If rows were affected
      */
     public boolean updateEventNote(long rowId, String note) {
@@ -373,25 +373,22 @@ public class EventTimerDbAdapter implements IConstants {
                 COL_ID + "=" + rowId, null) > 0;
     }
 
-//    //
-// ///////////////////////////////////////////////////////////////////////
-//    // Get data for start date only (ForStartDate)
-// //////////////////////////
-//    //
-// ///////////////////////////////////////////////////////////////////////
-//
-//    /**
-//     * Deletes all data in the database for the interval corresponding to the
-//     * given the start date.
-//     *
-//     * @param start The start date.
-//     * @return Whether successful.
-//     */
-//    public boolean deleteAllDataForStartDate(long start) {
-//        return mDb.delete(DB_DATA_TABLE,
-//                COL_START_TIME + "=" + start, null) > 0;
-//    }
-//
+    /**
+     * Deletes all data in the database for the given session.
+     *
+     * @param sessionId The session id.
+     * @return Whether successful.
+     */
+    public boolean deleteDataForSession(long sessionId) {
+        boolean retVal = true;
+        boolean success1, success2;
+        success1 = mDb.delete(DB_DATA_TABLE_SESSIONS,
+                COL_ID + "=" + sessionId, null) > 0;
+        success2 = mDb.delete(DB_DATA_TABLE_EVENTS,
+                COL_SESSION_ID + "=" + sessionId, null) > 0;
+        return success1 && success2;
+    }
+
 //    /**
 //     * Return a Cursor over the HR items in the database having the given the
 //     * start date.

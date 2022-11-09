@@ -31,6 +31,11 @@ interface IConstants {
     String TAG = "EventTimer";
 
     /**
+     * Used for SharedPreferences
+     */
+    String MAIN_ACTIVITY = "SessionsListActivity";
+
+    /**
      * Name of the package for this application.
      */
     String PACKAGE_NAME = "net.kenevans.eventtimer";
@@ -39,6 +44,11 @@ interface IConstants {
      * Value for a database date value indicating invalid.
      */
     long INVALID_TIME = Long.MIN_VALUE;
+
+    /**
+     * Value for a database String indicating invalid.
+     */
+    String INVALID_STRING = "Invalid";
 
     // Formatters
     /**
@@ -70,6 +80,12 @@ interface IConstants {
      */
     SimpleDateFormat dateFormat =
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
+
+    /**
+     * The formatter to use for formatting session dates.
+     */
+    SimpleDateFormat csvDateFormat =
+            new SimpleDateFormat("E MMM d yyyy HH:mm:ss", Locale.US);
 
     // Session Display
     /**

@@ -32,6 +32,21 @@ public class SessionDisplay implements IConstants {
         return name;
     }
 
+    /**
+     * Gets a name that is not null nor empty and which should be readable on
+     * Windows.
+     *
+     * @return The safe name.
+     */
+    public String getSafeName() {
+        if (name == null || name.length() == 0) {
+            name = dateFormat.format(getStartTime());
+        }
+        // Remove illegal characters
+        name = name.replaceAll("[^a-zA-Z0-9.\\-]", "_");
+        return name;
+    }
+
     public void setName(String name) {
         this.name = name;
     }

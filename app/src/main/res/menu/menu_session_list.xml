@@ -1,0 +1,57 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="net.kenevans.android.blecardiacmonitor.SessionManagerActivity">
+    <item
+        android:id="@+id/menu_discard"
+        android:checkable="false"
+        android:orderInCategory="4"
+        android:title="@string/menu_discard"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_save"
+        android:checkable="false"
+        android:orderInCategory="5"
+        android:title="@string/menu_save"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_check_all"
+        android:checkable="false"
+        android:orderInCategory="8"
+        android:title="@string/menu_check_all"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_check_none"
+        android:checkable="false"
+        android:orderInCategory="9"
+        android:title="@string/menu_check_none"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_save_database_cvs"
+        android:checkable="false"
+        android:orderInCategory="10"
+        android:title="@string/menu_save_database_cvs"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_restore_database_cvs"
+        android:checkable="false"
+        android:orderInCategory="11"
+        android:title="@string/menu_restore_database_cvs"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/info"
+        android:orderInCategory="12"
+        android:title="@string/info_item" />
+    <item
+        android:id="@+id/menu_save_database"
+        android:orderInCategory="13"
+        android:title="@string/menu_save_database" />
+    <item
+        android:id="@+id/menu_replace_database"
+        android:orderInCategory="14"
+        android:title="@string/menu_restore_database" />
+    <item
+        android:id="@+id/choose_data_directory"
+        android:orderInCategory="15"
+        android:title="@string/choose_data_directory_item" />
+</menu>
