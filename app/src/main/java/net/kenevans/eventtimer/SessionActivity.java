@@ -272,7 +272,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
-                keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
+                keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             record();
             return true;
         }
@@ -318,13 +318,30 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
             Utils.errMsg(this, "There is no current session");
             return;
         }
-        long now = new Date().getTime();
-        mCurrentSession.addEvent(mDbAdapter, mCurrentSession.getId(), now,
-                "@ " + dateFormat.format(now));
-        mCurrentSession = Session.getSessionFromDb(mDbAdapter,
-                mCurrentSession.getId());
-        updateInfo();
-        resetListView();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        if (mCurrentSession.getName() != null) {
+            input.setText("");
+        }
+        builder.setView(input);
+
+        builder.setTitle("Enter the note");
+        // Set up the buttons
+        builder.setPositiveButton(android.R.string.ok,
+                (dialog, which) -> {
+                    dialog.dismiss();
+                    long now = new Date().getTime();
+                    mCurrentSession.addEvent(mDbAdapter,
+                            mCurrentSession.getId(),
+                            now, String.valueOf(input.getText()));
+                    mCurrentSession = Session.getSessionFromDb(mDbAdapter,
+                            mCurrentSession.getId());
+                    updateInfo();
+                    resetListView();
+                });
+        builder.setNegativeButton(android.R.string.cancel,
+                (dialog, which) -> dialog.cancel());
+        builder.show();
     }
 
     private void startTimer() {

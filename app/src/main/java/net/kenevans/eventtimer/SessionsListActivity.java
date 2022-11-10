@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -106,14 +107,10 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         mSessionListAdapter = new SessionListAdapter(this, mDbAdapter);
-
         FloatingActionButton fab =
                 findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
-            Log.d(TAG, "FloatingActionButton onClick nSessions="
-                    + mSessionListAdapter.mSessions.size()
-                    + " thread=" + Thread.currentThread());
-            addEvent(null);
+            addNewSession();
         });
 
         mDbAdapter = new EventTimerDbAdapter(this);
@@ -205,7 +202,29 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         }
     }
 
-    private void addEvent(String name) {
+    private void addNewSession() {
+        Log.d(TAG, "FloatingActionButton onClick nSessions="
+                + mSessionListAdapter.mSessions.size()
+                + " thread=" + Thread.currentThread());
+        androidx.appcompat.app.AlertDialog.Builder builder =
+                new androidx.appcompat.app.AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        input.setText(dateFormat.format(new Date()));
+        builder.setView(input);
+
+        builder.setTitle("Enter the new session name");
+        // Set up the buttons
+        builder.setPositiveButton(android.R.string.ok,
+                (dialog, which) -> {
+                    dialog.dismiss();
+                    addSession(input.getText().toString());
+                });
+        builder.setNegativeButton(android.R.string.cancel,
+                (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void addSession(String name) {
         long now = new Date().getTime();
         // Add at beginning
         Session session = new Session(mDbAdapter, now);
