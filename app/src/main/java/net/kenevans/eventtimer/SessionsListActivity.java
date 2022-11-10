@@ -275,7 +275,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             try {
                 sessionId = session.getId();
                 name = session.getSafeName();
-                fileName = name + ".csv";
+                fileName = SESSION_CSV_NAME_PREFIX + name + ".csv";
                 Uri docTreeUri =
                         DocumentsContract.buildDocumentUriUsingTree(treeUri,
                                 treeDocumentId);
@@ -341,7 +341,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         try {
             String sessionName = session.getName();
             Date startTime = new Date(session.getStartTime());
-            String startStr = csvDateFormat.format(startTime);
+            String startStr = dateFormat.format(startTime);
             String endStr;
             if (session.getEndTime() == INVALID_TIME) {
                 endStr = "NA";
@@ -366,20 +366,23 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                             DateUtils.formatElapsedTime(elapsedTime / 1000);
                 }
             }
-            out.write("Start Time" + SAVE_SESSION_DELIM + startStr + "\n");
-            out.write("End Time" + SAVE_SESSION_DELIM + endStr + "\n");
-            out.write("Events" + SAVE_SESSION_DELIM + nEventsStr + "\n");
-            out.write("Elapsed Time" + SAVE_SESSION_DELIM + elapsedStr + "\n");
-            out.write("Name" + SAVE_SESSION_DELIM + nameStr + "\n");
+            out.write("Start Time" + CSV_DELIM + startStr + "\n");
+            out.write("End Time" + CSV_DELIM + endStr + "\n");
+            out.write("Events" + CSV_DELIM + nEventsStr + "\n");
+            out.write("Elapsed Time" + CSV_DELIM + elapsedStr + "\n");
+            out.write("Name" + CSV_DELIM + nameStr + "\n");
 
             // Loop over events
             String line, note;
             long time;
+            out.write(COL_TIME + CSV_DELIM + COL_NOTE + CSV_DELIM
+                    + "java-" + COL_TIME + "\n");
             for (Event event : session.getEventList()) {
                 time = event.getTime();
-                line = csvDateFormat.format(time) + SAVE_DATABASE_DELIM;
+                line = dateFormat.format(time) + CSV_DELIM;
                 note = event.getNote();
-                line += note + "\n";
+                line += note + CSV_DELIM;
+                line += time + "\n";
                 out.write(line);
             }
         } catch (Exception ex) {

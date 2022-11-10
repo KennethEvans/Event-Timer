@@ -21,7 +21,7 @@
     <string name="menu_select_device">Select Device</string>
     <string name="menu_test">Test</string>
     <string name="menu_plot">Plot</string>
-    <string name="menu_discard">Discard</string>
+    <string name="menu_discard">Discard Sessions</string>
     <string name="menu_merge">Merge</string>
     <string name="menu_split">Split</string>
     <string name="menu_save">Save Sessions</string>

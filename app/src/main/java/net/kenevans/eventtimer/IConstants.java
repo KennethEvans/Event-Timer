@@ -89,9 +89,10 @@ interface IConstants {
 
     // Session Display
     /**
-     * Prefix for session names. Will be followed by a date and time.
+     * Prefix for session names for CSV files. Will be followed by a date and
+     * time.
      */
-    String SESSION_NAME_PREFIX = "EventTimer-";
+    String SESSION_CSV_NAME_PREFIX = "EventTimer-";
 
 
     // Preferences
@@ -145,7 +146,7 @@ interface IConstants {
      * Database column for the stop time.
      */
     String COL_END_TIME = "stop_time";
-     /**
+    /**
      * Database column for the name.
      */
     String COL_NAME = "name";
@@ -169,6 +170,10 @@ interface IConstants {
      */
     String SAVE_DATABASE_FILENAME_SUFFIX = ".csv";
     /**
+     * Delimiter for saving CSV files.
+     */
+    String CSV_DELIM = "\t";
+    /**
      * Template for creating the file name for saving the database.
      */
     String SAVE_DATABASE_FILENAME_TEMPLATE = SAVE_DATABASE_FILENAME_PREFIX
@@ -179,10 +184,6 @@ interface IConstants {
      */
     String RESTORE_FILE_NAME = "restore"
             + SAVE_DATABASE_FILENAME_SUFFIX;
-    /**
-     * Delimiter for saving session files.
-     */
-    String SAVE_SESSION_DELIM = ",";
     /**
      * Delimiter for saving the database.
      */
