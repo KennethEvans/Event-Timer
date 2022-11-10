@@ -31,6 +31,8 @@ import android.view.ContextThemeWrapper;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 
 public class Utils implements IConstants {
@@ -226,5 +228,45 @@ public class Utils implements IConstants {
                     .append(" value=").append(value).append("\n");
         }
         return sb.toString();
+    }
+
+    /**
+     * Gets a string of the form Days:HH:MM:SS for the difference of the
+     * given start and end dates.
+     *
+     * @param start The start date;
+     * @param end The end date.
+     * @return The formatted String.
+     */
+    @SuppressWarnings("unused")
+    public static String getDurationString(Date start, Date end) {
+        return getDurationString(start.getTime(), end.getTime());
+    }
+
+    /**
+     * Gets a string of the form Days:HH:MM:SS for the difference of the
+     * given start and end times.
+     *
+     * @param start The start time;
+     * @param end The end time.
+     * @return The formatted String.
+     */
+    @SuppressWarnings("unused")
+    public static String getDurationString(long start, long end) {
+        // d1, d2 are dates
+        long diff = end - start;
+
+        long seconds = diff / 1000 % 60;
+        long minutes = diff / (60 * 1000) % 60;
+        long hours = diff / (60 * 60 * 1000) % 24;
+        long days = diff / (24 * 60 * 60 * 1000);
+        if (days > 0) {
+            return String.format(Locale.US, "%d:%02d:%02d:%02d", days, hours, minutes,
+                    seconds);
+        } else if (hours > 0) {
+            return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds);
+        } else {
+            return String.format(Locale.US, "%02d:%02d", minutes, seconds);
+        }
     }
 }

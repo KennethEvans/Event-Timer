@@ -2,7 +2,6 @@ package net.kenevans.eventtimer;
 
 import android.content.Intent;
 import android.database.Cursor;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -190,23 +189,21 @@ public class SessionListAdapter extends BaseAdapter implements IConstants {
         if (nEvents != -1) {
             nEventsStr = String.format(Locale.US, "%d", nEvents);
         }
-        String elapsedStr = "NA";
+        String durationStr = "NA";
         if (startTime.getTime() != INVALID_TIME) {
-            long elapsedTime;
+            long durationTime;
             if (session.getEndTime() != INVALID_TIME) {
                 Date endTime = new Date(session.getEndTime());
-                elapsedTime = endTime.getTime() - startTime.getTime();
-                elapsedStr =
-                        DateUtils.formatElapsedTime(elapsedTime / 1000);
+                durationStr = Utils.getDurationString(startTime, endTime);
             }
         }
         String infoStr = String.format(Locale.US,
                 "Start Time: %s\n"
                         + "EndTime: %s\n"
                         + "Events: %s\n"
-                        + "Elapsed Time: %s\n"
+                        + "Duration: %s\n"
                         + "Name: %s",
-                startStr, endStr, nEventsStr, elapsedStr, nameStr);
+                startStr, endStr, nEventsStr, durationStr, nameStr);
         viewHolder.sessionCheckbox.setText(sessionName);
         viewHolder.sessionInfo.setText(infoStr);
 

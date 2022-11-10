@@ -78,6 +78,11 @@ interface IConstants {
     /**
      * The formatter to use for formatting session dates.
      */
+    SimpleDateFormat dateFormatAmPm =
+            new SimpleDateFormat("E MMM d, yyyy hh:mm:ss aa", Locale.US);
+    /**
+     * The formatter to use for formatting session dates.
+     */
     SimpleDateFormat dateFormat =
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
 

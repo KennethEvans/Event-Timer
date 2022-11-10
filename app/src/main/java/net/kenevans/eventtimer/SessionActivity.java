@@ -14,18 +14,14 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class SessionActivity extends AppCompatActivity implements IConstants {
-    public static final SimpleDateFormat dateFormat =
-            new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
     TextView mTextViewEvent;
     TextView mTextViewTime;
     private ListView mListView;
@@ -365,7 +361,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         // Add the time then get the Session data
         if (mTimerStarted) {
             Date now = new Date();
-            mTextViewTime.setText(dateFormat.format(now));
+            mTextViewTime.setText(dateFormatAmPm.format(now));
         } else {
             mTextViewTime.setText(R.string.not_running_label);
         }
@@ -481,25 +477,28 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         }
 
         // Get the eventList as a copy and reverse it
-        List<Event> eventList = new ArrayList<>();
+        List<EventEx> eventListEx = new LinkedList<>();
         int nEvents = mCurrentSession.getEventList().size();
         if (nEvents > 0) {
+            Event event;
+            EventEx eventEx;
             for (int i = nEvents - 1; i >= 0; i--) {
-                eventList.add(mCurrentSession.getEventList().get(i));
+                event = mCurrentSession.getEventList().get(i);
+                eventListEx.add(new EventEx(mDbAdapter, event));
             }
         }
 
         // Set the ListAdapter
-        ArrayAdapter<Event> adapter = new ArrayAdapter<>(this,
-                R.layout.row, eventList);
+        ArrayAdapter<EventEx> adapter = new ArrayAdapter<>(this,
+                R.layout.row, eventListEx);
         mListView.setAdapter(adapter);
 
         mListView.setOnItemClickListener((parent, view, pos, id) -> {
-            if (pos < 0 || pos >= eventList.size()) {
+            if (pos < 0 || pos >= eventListEx.size()) {
                 return;
             }
-            Event selectedEvent =
-                    (Event) parent.getItemAtPosition(pos);
+            EventEx selectedEvent =
+                    (EventEx) parent.getItemAtPosition(pos);
             int checkedItem = 0;
             String[] items = {"Edit Note", "Delete"};
             AlertDialog.Builder builder = new AlertDialog.Builder(this);

@@ -10,7 +10,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -39,7 +38,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 public class SessionsListActivity extends AppCompatActivity implements IConstants {
-    //    private final List<Session> mSessionList = new ArrayList<>();
+    //    private final List<LinkedListmSessionList = new ArrayList<>();
     ListView mListView;
     private EventTimerDbAdapter mDbAdapter;
     private SessionListAdapter mSessionListAdapter;
@@ -109,9 +108,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         mSessionListAdapter = new SessionListAdapter(this, mDbAdapter);
         FloatingActionButton fab =
                 findViewById(R.id.fab);
-        fab.setOnClickListener(view -> {
-            addNewSession();
-        });
+        fab.setOnClickListener(view -> addNewSession());
 
         mDbAdapter = new EventTimerDbAdapter(this);
         mDbAdapter.open();
@@ -375,20 +372,18 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             int nEvents = session.getEventList().size();
             String nEventsStr;
             nEventsStr = String.format(Locale.US, "%d", nEvents);
-            String elapsedStr = "NA";
+            String durationStr = "NA";
             if (startTime.getTime() != INVALID_TIME) {
-                long elapsedTime;
                 if (session.getEndTime() != INVALID_TIME) {
-                    Date endTime = new Date(session.getEndTime());
-                    elapsedTime = endTime.getTime() - startTime.getTime();
-                    elapsedStr =
-                            DateUtils.formatElapsedTime(elapsedTime / 1000);
+                    durationStr =
+                            Utils.getDurationString(session.getStartTime(),
+                                    session.getEndTime());
                 }
             }
             out.write("Start Time" + CSV_DELIM + startStr + "\n");
             out.write("End Time" + CSV_DELIM + endStr + "\n");
             out.write("Events" + CSV_DELIM + nEventsStr + "\n");
-            out.write("Elapsed Time" + CSV_DELIM + elapsedStr + "\n");
+            out.write("Duration" + CSV_DELIM + durationStr + "\n");
             out.write("Name" + CSV_DELIM + nameStr + "\n");
 
             // Loop over events
