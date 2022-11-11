@@ -4,8 +4,8 @@ import android.database.Cursor;
 import android.util.Log;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -54,7 +54,7 @@ public class Session implements IConstants {
                    boolean useDb) {
         this.mStartTime = startTime;
         // Always add one event for the start
-        List<Event> eventList = new LinkedList<>();
+        List<Event> eventList = new ArrayList<>();
         if (useDb) {
             mId = dbAdapter.createSession(mStartTime, mEndTime, mName);
             mEventList = eventList;
@@ -75,11 +75,16 @@ public class Session implements IConstants {
      */
     public static Session getSessionFromDb(EventTimerDbAdapter dbAdapter,
                                            long sessionId) {
+        if(sessionId <0) {
+            Log.d(TAG, "Session.getSessionFromDb got invalid sessionId="
+                    + sessionId);
+            return null;
+        }
         Cursor cursor = null;
         try {
             cursor = dbAdapter.fetchSession(sessionId);
         } catch (Exception ex) {
-            Log.d(TAG, "Failed to get Session from id=" + sessionId, ex);
+            Log.d(TAG, "Failed to get Session from sessionId=" + sessionId, ex);
             if (cursor != null) cursor.close();
             return null;
         }
@@ -114,7 +119,7 @@ public class Session implements IConstants {
         // Get events
         cursor = dbAdapter.fetchAllEventDataForSession(sessionId);
         if (cursor != null) {
-            List<Event> eventList = new LinkedList<>();
+            List<Event> eventList = new ArrayList<>();
             int indexId = cursor.getColumnIndex(COL_ID);
             int indexTime = cursor
                     .getColumnIndex(COL_TIME);
@@ -153,7 +158,6 @@ public class Session implements IConstants {
                 dateFormat.format(new Date(mEndTime)) : "Not ended";
         String durationStr;
         if (mStartTime != INVALID_TIME) {
-            long durationTime;
             int size = mEventList.size();
             if (size < 2) {
                 durationStr = Utils.getDurationString(0, 0);
@@ -212,11 +216,7 @@ public class Session implements IConstants {
         }
         long endTime = INVALID_TIME;
         if (mEventList.size() > 0) {
-            endTime = mEventList.get(mEventList.size() -1).getTime();
-//            if (mEventList instanceof LinkedList<?>) {
-//                LinkedList<Event> llist = (LinkedList<Event>) mEventList;
-//                endTime = llist.getLast().getTime();
-//            }
+            endTime = mEventList.get(mEventList.size() - 1).getTime();
         }
         mEndTime = endTime;
         dbAdapter.updateSessionEndTime(mId, mEndTime);

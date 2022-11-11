@@ -102,6 +102,7 @@ interface IConstants {
 
     // Preferences
     String PREF_TREE_URI = "tree_uri";
+    String PREF_START_TIMER_INITIALLY = "timer_start_initially";
 
     // Requests
     int REQ_ACCESS_FINE_LOCATION = 1;

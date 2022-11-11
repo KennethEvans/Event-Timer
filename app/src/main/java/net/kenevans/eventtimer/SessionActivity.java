@@ -1,5 +1,6 @@
 package net.kenevans.eventtimer;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,8 +15,8 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
@@ -41,7 +42,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         public void run() {
             try {
                 updateInfo();
-                resetListView();
+//                resetListView();
             } catch (Exception ex) {
                 Utils.excMsg(SessionActivity.this, "Error in timer", ex);
             } finally {
@@ -53,7 +54,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v(TAG, this.getClass().getSimpleName() + " onCreate");
+        Log.d(TAG, this.getClass().getSimpleName() + " onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_session);
         mTextViewTime = findViewById(R.id.time);
@@ -106,7 +107,17 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
             getSupportActionBar().setTitle(title);
         }
 
-//        startTimer();
+        // Decide whether to start the timer
+        SharedPreferences prefs = getSharedPreferences(MAIN_ACTIVITY,
+                MODE_PRIVATE);
+        boolean startTimer = prefs.getBoolean(PREF_START_TIMER_INITIALLY,
+                false);
+        if (startTimer) {
+            startTimer();
+        }
+        Log.d(TAG, this.getClass().getSimpleName() + " onCreate:"
+                + " mTimerStarted=" + mTimerStarted
+                + " startTimer=" + startTimer);
 
         // Ask for needed permissions
         requestPermissions();
@@ -114,22 +125,31 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
 
     @Override
     protected void onPause() {
-        Log.v(TAG, this.getClass().getSimpleName() + " onPause");
+        Log.d(TAG, this.getClass().getSimpleName() + " onPause"
+                + " mTimerStarted=" + mTimerStarted);
         super.onPause();
-
+        SharedPreferences.Editor editor =
+                getSharedPreferences(MAIN_ACTIVITY, MODE_PRIVATE).edit();
+        editor.putBoolean(PREF_START_TIMER_INITIALLY, mTimerStarted);
+        editor.apply();
     }
 
     @Override
     public void onResume() {
-        Log.d(TAG, this.getClass().getSimpleName() + " onResume:");
+        Log.d(TAG, this.getClass().getSimpleName() + " onResume:"
+                + " mTimerStarted=" + mTimerStarted);
         super.onResume();
+        SharedPreferences.Editor editor =
+                getSharedPreferences(MAIN_ACTIVITY, MODE_PRIVATE).edit();
+        editor.putBoolean(PREF_START_TIMER_INITIALLY, mTimerStarted);
+        editor.apply();
         resetListView();
         updateInfo();
 
 //        // Check if PREF_TREE_URI is valid and remove it if not
 //        if (UriUtils.getNPersistedPermissions(this) <= 0) {
 //            SharedPreferences.Editor editor =
-//                    getPreferences(MODE_PRIVATE)
+//                    getSharedPreferences(MAIN_ACTIVITY, MODE_PRIVATE)
 //                            .edit();
 //            editor.putString(PREF_TREE_URI, null);
 //            editor.apply();
@@ -286,7 +306,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
     }
 
     private void start() {
-        Log.v(TAG, this.getClass().getSimpleName() + " start");
+        Log.d(TAG, this.getClass().getSimpleName() + " start");
         if (mCurrentSession == null) {
             return;
         }
@@ -294,18 +314,16 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
             stopTimer();
         }
         startTimer();
-        resetListView();
         updateInfo();
     }
 
     private void stop() {
-        Log.v(TAG, this.getClass().getSimpleName() + " stop");
+        Log.d(TAG, this.getClass().getSimpleName() + " stop");
         if (mCurrentSession == null) {
             Utils.errMsg(this, "There is no current event");
             return;
         }
         stopTimer();
-        resetListView();
         updateInfo();
     }
 
@@ -477,7 +495,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         }
 
         // Get the eventList as a copy and reverse it
-        List<EventEx> eventListEx = new LinkedList<>();
+        List<EventEx> eventListEx = new ArrayList<>();
         int nEvents = mCurrentSession.getEventList().size();
         if (nEvents > 0) {
             Event event;

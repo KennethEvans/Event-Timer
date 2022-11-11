@@ -678,8 +678,8 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
      */
     public static List<UriUtils.UriData> getUriList(Context context) {
         ContentResolver contentResolver = context.getContentResolver();
-        SharedPreferences prefs = context.getSharedPreferences(
-                "SessionsListActivity", Context.MODE_PRIVATE);
+        SharedPreferences prefs = context.getSharedPreferences(MAIN_ACTIVITY,
+                Context.MODE_PRIVATE);
         String treeUriStr = prefs.getString(PREF_TREE_URI, null);
         if (treeUriStr == null) {
             Utils.errMsg(context, "There is no tree Uri set");
