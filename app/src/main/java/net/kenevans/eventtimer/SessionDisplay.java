@@ -7,17 +7,19 @@ public class SessionDisplay implements IConstants {
     private long id;
     private long startTime;
     private long endTime;
+    private String duration;
     private boolean checked = false;
     private int nEvents;
     private CheckBox checkBox;
 
     public SessionDisplay(long id, String name, long startTime,
-                          long endTime, int nEvents) {
+                          long endTime, int nEvents, String duration) {
         this.id = id;
         this.name = name;
         this.startTime = startTime;
         this.endTime = endTime;
         this.nEvents = nEvents;
+        this.duration = duration;
     }
 
     public long getId() {
@@ -73,6 +75,14 @@ public class SessionDisplay implements IConstants {
 
     public void setNEvents(int nEvents) {
         this.nEvents = nEvents;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
     }
 
     public boolean isChecked() {

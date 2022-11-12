@@ -18,7 +18,22 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import androidx.documentfile.provider.DocumentFile;
+
 public class UriUtils implements IConstants {
+    /**
+     * Checks if a file exists for the given document Uri.
+     *
+     * @param context The context.
+     * @param uri     The document Uri.
+     * @return Whether it exists.
+     */
+    public static boolean exists1(Context context, Uri treeUri, Uri uri) {
+        String fileName = getFileNameFromUri(uri);
+        DocumentFile root = DocumentFile.fromTreeUri(context, treeUri);
+        return root.findFile(fileName) != null;
+    }
+
     /**
      * Checks if a file exists for the given document Uri.
      *
@@ -47,7 +62,7 @@ public class UriUtils implements IConstants {
         String lastSeg = uri.getLastPathSegment();
         String[] tokens = lastSeg.split("/");
         int len = tokens.length;
-        if (tokens == null || len == 0) return null;
+        if (len == 0) return null;
         return tokens[len - 1];
     }
 
@@ -223,7 +238,7 @@ public class UriUtils implements IConstants {
             sb.append(permission.getUri()).append("\n");
             sb.append("    time=").
                     append(new Date(permission.getPersistedTime())).append(
-                    "\n");
+                            "\n");
             sb.append("    access=").append(permission.isReadPermission() ?
                     "R" : "").append(permission.isWritePermission() ? "W" :
                     "").append("\n");

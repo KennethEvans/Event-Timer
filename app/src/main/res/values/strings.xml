@@ -30,6 +30,7 @@
     <string name="menu_check_none">Check None</string>
     <string name="menu_save_database_cvs">Save Database as CSV</string>
     <string name="menu_restore_database_cvs">Restore Database from CSV</string>
+    <string name="menu_add_session_from_cvs">Add Session from CSV</string>
     <string name="menu_save_database">Save Database</string>
     <string name="menu_restore_database">Replace Database</string>
     <string name="menu_restoring">Restoring</string>

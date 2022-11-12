@@ -19,6 +19,10 @@ import java.util.Locale;
  * of the last event or invalid there is none. The start time is the time the
  * session was created.
  * <p>
+ * Note that the start time returned by getCreateTime is the time the session
+ * was created whereas the time returned by getFirstEventTime is the time of
+ * the first event. These may be different.
+ * <p>
  * A Session is stored in the database in the table session with columns
  * _id,start_time, end_time, and name. An Event is stored in the database
  * in the events table with columns _id, time, note, and session_id.
@@ -27,7 +31,7 @@ public class Session implements IConstants {
     public static final SimpleDateFormat dateFormat =
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
 
-    private long mStartTime = INVALID_TIME;
+    private long mCreateTime = INVALID_TIME;
     private long mEndTime = INVALID_TIME;
     private String mName = "";
     private List<Event> mEventList;
@@ -52,16 +56,16 @@ public class Session implements IConstants {
      */
     public Session(EventTimerDbAdapter dbAdapter, long startTime,
                    boolean useDb) {
-        this.mStartTime = startTime;
+        this.mCreateTime = startTime;
         // Always add one event for the start
         List<Event> eventList = new ArrayList<>();
         if (useDb) {
-            mId = dbAdapter.createSession(mStartTime, mEndTime, mName);
+            mId = dbAdapter.createSession(mCreateTime, mEndTime, mName);
             mEventList = eventList;
-            addEvent(dbAdapter, mId, startTime, "Start");
+            addEvent(dbAdapter, mId, startTime, "Created");
         } else {
             // Use the startTime and an empty eventList
-            this.mStartTime = INVALID_TIME;
+            this.mCreateTime = INVALID_TIME;
             this.mEventList = eventList;
         }
     }
@@ -75,7 +79,7 @@ public class Session implements IConstants {
      */
     public static Session getSessionFromDb(EventTimerDbAdapter dbAdapter,
                                            long sessionId) {
-        if(sessionId <0) {
+        if (sessionId < 0) {
             Log.d(TAG, "Session.getSessionFromDb got invalid sessionId="
                     + sessionId);
             return null;
@@ -112,7 +116,7 @@ public class Session implements IConstants {
         cursor.close();
         Session session = new Session(null, new Date().getTime(), false);
         session.mId = sessionId;
-        session.mStartTime = startTime;
+        session.mCreateTime = startTime;
         session.mEndTime = stopTime;
         session.mName = name;
 
@@ -152,22 +156,9 @@ public class Session implements IConstants {
     @Override
     public String toString() {
         String nameStr = (mName != null) ? mName : "";
-        String startStr = (mStartTime != INVALID_TIME) ?
-                dateFormat.format(new Date(mStartTime)) : "Not started";
-        String endStr = (mEndTime != INVALID_TIME) ?
-                dateFormat.format(new Date(mEndTime)) : "Not ended";
-        String durationStr;
-        if (mStartTime != INVALID_TIME) {
-            int size = mEventList.size();
-            if (size < 2) {
-                durationStr = Utils.getDurationString(0, 0);
-            } else {
-                durationStr = Utils.getDurationString(mStartTime,
-                        mEventList.get(size - 1).getTime());
-            }
-        } else {
-            durationStr = "NA";
-        }
+        String startStr = dateFormat.format(getFirstEventTime());
+        String endStr = dateFormat.format(getEndTime());
+        String durationStr = getDuration();
         String nEventsStr = String.format(Locale.US, "%d", mEventList.size());
 
         return String.format(Locale.US, "Start Time: %s\n"
@@ -197,12 +188,46 @@ public class Session implements IConstants {
         return retVal;
     }
 
-    public long getStartTime() {
+    public String getDuration() {
+        String durationStr;
+        long startTime = getFirstEventTime();
+        if (startTime != INVALID_TIME) {
+            int size = mEventList.size();
+            if (size < 2) {
+                durationStr = Utils.getDurationString(0, 0);
+            } else {
+                durationStr = Utils.getDurationString(startTime,
+                        mEventList.get(size - 1).getTime());
+                durationStr = Utils.getDurationString(startTime,
+                        mEventList.get(size - 1).getTime());
+            }
+        } else {
+            durationStr = "NA";
+        }
+        return durationStr;
+    }
+
+    /**
+     * Returns the time of the first event, not mCreateTime.
+     *
+     * @return The time of the first event.
+     */
+    public long getFirstEventTime() {
         long startTime = INVALID_TIME;
         if (mEventList.size() > 0) {
             startTime = mEventList.get(0).getTime();
         }
         return startTime;
+    }
+
+    /**
+     * Returns mCreateTime, which is the time the Session was created, not
+     * necessarily but usually the time of the first event.
+     *
+     * @return The time the session was created.
+     */
+    public long getCreateTime() {
+        return mCreateTime;
     }
 
     public long getEndTime() {

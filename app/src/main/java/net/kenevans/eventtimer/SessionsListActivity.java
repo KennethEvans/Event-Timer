@@ -2,10 +2,8 @@ package net.kenevans.eventtimer;
 
 import android.app.AlertDialog;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
@@ -19,11 +17,13 @@ import android.widget.ListView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,7 +42,24 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
     ListView mListView;
     private EventTimerDbAdapter mDbAdapter;
     private SessionListAdapter mSessionListAdapter;
+    private Uri mUriToAdd;
 //    private RestoreTask mRestoreTask;
+
+    // Launcher for adding session from CSV
+    private final ActivityResultLauncher<Intent> openCsvLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        Log.d(TAG, "openCsvLauncher: result" +
+                                ".getResultCode()=" + result.getResultCode());
+                        if (result.getResultCode() != RESULT_OK) {
+                            Utils.warnMsg(this, "Failed to get CSV file");
+                        } else {
+                            // Set flag to add it in onResume
+                            mUriToAdd = result.getData().getData();
+                        }
+                    });
+
 
     // Launcher for PREF_TREE_URI
     private final ActivityResultLauncher<Intent> openDocumentTreeLauncher =
@@ -128,6 +145,10 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         Log.d(TAG, this.getClass().getSimpleName() + " onResume:");
         super.onResume();
         refresh();
+        if (mUriToAdd != null) {
+            Session session = doAddSessionFromCsvFile(mUriToAdd);
+            mUriToAdd = null;
+        }
 
 //        // Check if PREF_TREE_URI is valid and remove it if not
 //        if (UriUtils.getNPersistedPermissions(this) <= 0) {
@@ -153,16 +174,19 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         if (item.getItemId() == R.id.menu_discard) {
-            promptToDiscardSession();
+            promptDiscardSession();
             return true;
         } else if (item.getItemId() == R.id.menu_save) {
-            saveSessions();
+            saveSessionsToCsv();
             return true;
         } else if (item.getItemId() == R.id.menu_check_all) {
             setAllSessionsChecked(true);
             return true;
         } else if (item.getItemId() == R.id.menu_check_none) {
             setAllSessionsChecked(false);
+            return true;
+        } else if (item.getItemId() == R.id.menu_session_from_cvs) {
+            promptAddSessionFromCsvFile();
             return true;
         } else if (item.getItemId() == R.id.info) {
             info();
@@ -171,7 +195,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             saveDatabase();
             return true;
         } else if (item.getItemId() == R.id.menu_replace_database) {
-            checkReplaceDatabase();
+            promptReplaceDatabase();
             return true;
         } else if (item.getItemId() == R.id.choose_data_directory) {
             chooseDataDirectory();
@@ -229,17 +253,11 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             session.setName(mDbAdapter, name);
         }
         mSessionListAdapter.addSession(new SessionDisplay(session.getId(),
-                session.getName(), session.getStartTime(),
-                session.getEndTime(), session.getEventList().size()));
+                session.getName(), session.getFirstEventTime(),
+                session.getEndTime(), session.getEventList().size(),
+                session.getDuration()));
 
         refresh();
-    }
-
-    /**
-     * Splits the selected sessions.
-     */
-    public void splitSessions() {
-        Utils.infoMsg(this, "Not implemented yet");
     }
 
     /**
@@ -262,7 +280,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
     /**
      * Saves the selected sessions.
      */
-    public void saveSessions() {
+    public void saveSessionsToCsv() {
         ArrayList<SessionDisplay> checkedSessions = mSessionListAdapter
                 .getCheckedSessions();
         if (checkedSessions.size() == 0) {
@@ -284,7 +302,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         int nWriteErrors;
         String errMsg = "Error saving sessions:\n";
         String fileNames = "Saved to:\n";
-        String fileName;
+        String fileName, fileName0;
         String name;
         long sessionId;
         for (SessionDisplay session : checkedSessions) {
@@ -298,17 +316,16 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                 // Get a docUri and ParcelFileDescriptor
                 ContentResolver resolver = this.getContentResolver();
                 ParcelFileDescriptor pfd;
-                // Create the document
                 Uri docUri = DocumentsContract.createDocument(resolver,
                         docTreeUri,
-                        "test/csv", fileName);
+                        "text/csv", fileName);
                 pfd = getContentResolver().
                         openFileDescriptor(docUri, "w");
                 try (FileWriter writer =
                              new FileWriter(pfd.getFileDescriptor());
                      BufferedWriter out = new BufferedWriter(writer)) {
                     // Write the session data
-                    nWriteErrors = writeSessionDataToCvsFile(sessionId, out);
+                    nWriteErrors = doSaveSingleSessionToCsv(sessionId, out);
                     if (nWriteErrors > 0) {
                         nErrors += nWriteErrors;
                         errMsg += "  " + session.getName();
@@ -340,14 +357,14 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
      * @param out       The BufferedWriter.
      * @return The number of errors.
      */
-    private int writeSessionDataToCvsFile(long sessionId, BufferedWriter out) {
+    private int doSaveSingleSessionToCsv(long sessionId, BufferedWriter out) {
         int nErrors = 0;
         if (mDbAdapter == null) {
-            Log.d(TAG, "writeSessionDataToCvsFile: database adapter is null");
+            Log.d(TAG, "doSaveSessionToCsv: database adapter is null");
             nErrors++;
         }
         if (out == null) {
-            Log.d(TAG, "writeSessionDataToCvsFile: BufferedWriter is null");
+            Log.d(TAG, "doSaveSessionToCsv: BufferedWriter is null");
             nErrors++;
         }
         if (nErrors > 0) {
@@ -355,16 +372,13 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         }
         Session session = Session.getSessionFromDb(mDbAdapter, sessionId);
         try {
+            long createTime = session.getCreateTime();
+            long startTime = session.getFirstEventTime();
+            long endTime = session.getEndTime();
+            String createTimeStr = dateFormat.format(createTime);
+            String startTimeStr = dateFormat.format(startTime);
+            String endTimeStr = dateFormat.format(endTime);
             String sessionName = session.getName();
-            Date startTime = new Date(session.getStartTime());
-            String startStr = dateFormat.format(startTime);
-            String endStr;
-            if (session.getEndTime() == INVALID_TIME) {
-                endStr = "NA";
-            } else {
-                Date endTime = new Date(session.getEndTime());
-                endStr = csvDateFormat.format(endTime);
-            }
             String nameStr = sessionName;
             if (sessionName == null || sessionName.length() == 0) {
                 nameStr = "Not Named";
@@ -372,16 +386,10 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             int nEvents = session.getEventList().size();
             String nEventsStr;
             nEventsStr = String.format(Locale.US, "%d", nEvents);
-            String durationStr = "NA";
-            if (startTime.getTime() != INVALID_TIME) {
-                if (session.getEndTime() != INVALID_TIME) {
-                    durationStr =
-                            Utils.getDurationString(session.getStartTime(),
-                                    session.getEndTime());
-                }
-            }
-            out.write("Start Time" + CSV_DELIM + startStr + "\n");
-            out.write("End Time" + CSV_DELIM + endStr + "\n");
+            String durationStr = session.getDuration();
+            out.write("Create Time" + CSV_DELIM + createTimeStr + CSV_DELIM + createTime + "\n");
+            out.write("Start Time" + CSV_DELIM + startTimeStr + CSV_DELIM + startTime + "\n");
+            out.write("End Time" + CSV_DELIM + endTimeStr + CSV_DELIM + endTime + "\n");
             out.write("Events" + CSV_DELIM + nEventsStr + "\n");
             out.write("Duration" + CSV_DELIM + durationStr + "\n");
             out.write("Name" + CSV_DELIM + nameStr + "\n");
@@ -411,7 +419,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
      *
      * @see #doDiscardSession()
      */
-    public void promptToDiscardSession() {
+    public void promptDiscardSession() {
         ArrayList<SessionDisplay> checkedSessions = mSessionListAdapter
                 .getCheckedSessions();
         if (checkedSessions.size() == 0) {
@@ -453,6 +461,149 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             }
         }
         refresh();
+    }
+
+    /**
+     * Opens a CSV file picked by the system file chooser.
+     */
+    void promptAddSessionFromCsvFile() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+//        intent.setType("*/*");
+        intent.setType("text/comma-separated-values");
+        openCsvLauncher.launch(intent);
+    }
+
+    private Session doAddSessionFromCsvFile(Uri uri) {
+        Session session = null;
+        List<Event> eventList;
+        int lineNum = 0;
+        try {
+            try (InputStreamReader inputStreamReader =
+                         new InputStreamReader(
+                                 this.getContentResolver().openInputStream(uri));
+                 BufferedReader in =
+                         new BufferedReader(inputStreamReader)) {
+                // Read the file and get the data to restore
+                long createTime = INVALID_TIME;
+                long time;
+                long sessionId = -1;
+                String name = "", note = "";
+                boolean createTimeDefined = false, nameDefined = false;
+                String[] tokens;
+                String line;
+                while ((line = in.readLine()) != null) {
+                    lineNum++;
+                    tokens = line.trim().split(CSV_DELIM);
+                    if (tokens.length == 0) {
+                        // Empty line
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("#")) {
+                        // Comment
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("Create Time")) {
+                        createTime = dateFormat.parse(tokens[1]).getTime();
+                        createTimeDefined = true;
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("Name")) {
+                        name = tokens[1];
+                        nameDefined = true;
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("Start Time")) {
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("End Time")) {
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("Events")) {
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("Duration")) {
+                        continue;
+                    }
+                    if (tokens[0].trim().startsWith("time")) {
+                        continue;
+                    }
+                    if (session == null && createTimeDefined && nameDefined) {
+                        session = new Session(mDbAdapter, createTime);
+                        session.setName(mDbAdapter, name);
+                        sessionId = session.getId();
+                        eventList = session.getEventList();
+                        // Remove any events added in CTOR
+                        for (Event event : eventList) {
+                            session.removeEvent(mDbAdapter, event);
+                        }
+                    }
+                    time = Long.parseLong(tokens[2]);
+                    note = tokens[1];
+                    if (session != null) {
+                        session.addEvent(mDbAdapter, sessionId, time,
+                                note);
+                    }
+                }
+                // Check if ok
+                if (session == null) {
+                    Utils.errMsg(this, "Failed to the get necessary data to " +
+                            "create a session");
+                } else {
+                    checkDuplicateSessionName(session);
+                    Utils.infoMsg(this, "Created new session with:\n"
+                            + "Name=" + session.getName() + "\n"
+                            + "createTime="
+                            + dateFormat.format(session.getCreateTime()) + "\n"
+                            + "StartTime="
+                            + dateFormat.format(session.getFirstEventTime()) + "\n"
+                            + "EndTime="
+                            + dateFormat.format(session.getEndTime()) + "\n"
+                            + "Events=" + session.getEventList().size()
+                    );
+                }
+            }
+        } catch (Exception ex) {
+            Utils.excMsg(this, "Got Exception reading CSV at line "
+                    + lineNum, ex);
+        }
+        return session;
+    }
+
+    private void checkDuplicateSessionName(Session session) {
+        if (session == null) return;
+        Log.d(TAG, "checkDuplicateSessionName: " + session.getName());
+        if (mSessionListAdapter == null) return;
+        ArrayList<SessionDisplay> sessionList =
+                mSessionListAdapter.getSessions();
+        if (sessionList == null || sessionList.isEmpty()) {
+            return;
+        }
+        String name = session.getName();
+        for (SessionDisplay sessionDisplay : sessionList) {
+            if (name.equals(sessionDisplay.getName())) {
+                androidx.appcompat.app.AlertDialog.Builder builder =
+                        new androidx.appcompat.app.AlertDialog.Builder(this);
+                final EditText input = new EditText(this);
+                if (session.getName() != null) {
+                    input.setText(session.getName());
+                }
+                builder.setView(input);
+
+                builder.setTitle("Session name already exists. Rename?");
+                // Set up the buttons
+                builder.setPositiveButton(android.R.string.ok,
+                        (dialog, which) -> {
+                            dialog.dismiss();
+                            session.setName(mDbAdapter,
+                                    input.getText().toString());
+                            refresh();
+                        });
+                builder.setNegativeButton(android.R.string.cancel,
+                        (dialog, which) -> dialog.cancel());
+                builder.show();
+            }
+        }
     }
 
     /**
@@ -553,8 +704,8 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
      * actually
      * do the replace.
      */
-    private void checkReplaceDatabase() {
-        Log.d(TAG, "checkReplaceDatabase");
+    private void promptReplaceDatabase() {
+        Log.d(TAG, "promptReplaceDatabase");
         // Find the .db files in the data directory
         SharedPreferences prefs = getPreferences(MODE_PRIVATE);
         String treeUriStr = prefs.getString(PREF_TREE_URI, null);
@@ -606,10 +757,11 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                             .setPositiveButton(R.string.ok,
                                     (dialog1, which) -> {
                                         dialog1.dismiss();
-                                        Log.d(TAG, "Calling replaceDatabase: " +
+                                        Log.d(TAG, "Calling doReplaceDatabase" +
+                                                ": " +
                                                 "uri="
                                                 + children.get(item).uri);
-                                        replaceDatabase(children.get(item).uri);
+                                        doReplaceDatabase(children.get(item).uri);
                                     })
                             .setNegativeButton(R.string.cancel, null)
                             .show();
@@ -623,13 +775,13 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
      *
      * @param uri The Uri.
      */
-    private void replaceDatabase(Uri uri) {
-        Log.d(TAG, this.getClass().getSimpleName() + ": replaceDatabase: uri="
+    private void doReplaceDatabase(Uri uri) {
+        Log.d(TAG, this.getClass().getSimpleName() + ": doReplaceDatabase: uri="
                 + uri.getLastPathSegment());
         String lastSeg = uri.getLastPathSegment();
         if (!UriUtils.exists(this, uri)) {
             String msg = "Source database does not exist " + lastSeg;
-            Log.d(TAG, "replaceDatabase: " + msg);
+            Log.d(TAG, "doReplaceDatabase: " + msg);
             Utils.errMsg(this, msg);
             return;
         }
@@ -668,67 +820,6 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             Log.e(TAG, msg, ex);
             Utils.excMsg(this, msg, ex);
         }
-    }
-
-    /**
-     * Get the list of available restore files.
-     *
-     * @param context The context.
-     * @return The list.
-     */
-    public static List<UriUtils.UriData> getUriList(Context context) {
-        ContentResolver contentResolver = context.getContentResolver();
-        SharedPreferences prefs = context.getSharedPreferences(MAIN_ACTIVITY,
-                Context.MODE_PRIVATE);
-        String treeUriStr = prefs.getString(PREF_TREE_URI, null);
-        if (treeUriStr == null) {
-            Utils.errMsg(context, "There is no tree Uri set");
-            return null;
-        }
-        Uri treeUri = Uri.parse(treeUriStr);
-        Uri childrenUri =
-                DocumentsContract.buildChildDocumentsUriUsingTree(treeUri,
-                        DocumentsContract.getTreeDocumentId(treeUri));
-        List<UriUtils.UriData> uriList = new ArrayList<>();
-        String[] projection = {
-                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-                DocumentsContract.Document.COLUMN_LAST_MODIFIED,
-        };
-
-        try (Cursor cursor = contentResolver.query(childrenUri, projection,
-                null, null, null)) {
-            if (cursor == null) return null;
-            String documentId;
-            Uri documentUri;
-            String displayName;
-            long lastModified;
-            while (cursor.moveToNext()) {
-                documentUri = null;
-                if (cursor.getColumnIndex(projection[0]) != -1) {
-                    documentId = cursor.getString(0);
-                    documentUri =
-                            DocumentsContract.buildDocumentUriUsingTree(treeUri,
-                                    documentId);
-                }
-                if (documentUri == null) continue;
-
-                displayName = "<NA>";
-                if (cursor.getColumnIndex(projection[1]) != -1) {
-                    displayName = cursor.getString(1);
-                }
-                lastModified = -1;
-                if (cursor.getColumnIndex(projection[2]) != -1) {
-                    lastModified = cursor.getLong(2);
-                }
-                if (displayName.startsWith(SAVE_DATABASE_FILENAME_PREFIX)
-                        && displayName.endsWith(SAVE_DATABASE_FILENAME_SUFFIX)) {
-                    uriList.add(new UriUtils.UriData(documentUri, lastModified,
-                            displayName));
-                }
-            }
-        }
-        return uriList;
     }
 
     /**

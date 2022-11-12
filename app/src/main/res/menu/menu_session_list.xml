@@ -27,16 +27,10 @@
         android:title="@string/menu_check_none"
         app:showAsAction="never" />
     <item
-        android:id="@+id/menu_save_database_cvs"
-        android:checkable="false"
-        android:orderInCategory="5"
-        android:title="@string/menu_save_database_cvs"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/menu_restore_database_cvs"
+        android:id="@+id/menu_session_from_cvs"
         android:checkable="false"
         android:orderInCategory="6"
-        android:title="@string/menu_restore_database_cvs"
+        android:title="@string/menu_add_session_from_cvs"
         app:showAsAction="never" />
     <item
         android:id="@+id/info"
