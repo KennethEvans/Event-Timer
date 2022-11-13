@@ -31,8 +31,7 @@ public class Session implements IConstants {
     public static final SimpleDateFormat dateFormat =
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
 
-    private long mCreateTime = INVALID_TIME;
-    private long mEndTime = INVALID_TIME;
+    private long mCreateTime;
     private String mName = "";
     private List<Event> mEventList;
     private long mId = -1;
@@ -60,7 +59,7 @@ public class Session implements IConstants {
         // Always add one event for the start
         List<Event> eventList = new ArrayList<>();
         if (useDb) {
-            mId = dbAdapter.createSession(mCreateTime, mEndTime, mName);
+            mId = dbAdapter.createSession(mCreateTime, mName);
             mEventList = eventList;
             addEvent(dbAdapter, mId, startTime, "Created");
         } else {
@@ -84,70 +83,66 @@ public class Session implements IConstants {
                     + sessionId);
             return null;
         }
-        Cursor cursor = null;
-        try {
-            cursor = dbAdapter.fetchSession(sessionId);
-        } catch (Exception ex) {
-            Log.d(TAG, "Failed to get Session from sessionId=" + sessionId, ex);
-            if (cursor != null) cursor.close();
-            return null;
-        }
-        if (cursor == null) return null;
-        int indexStartTime = cursor
-                .getColumnIndex(COL_START_TIME);
-        int indexStopTime = cursor
-                .getColumnIndex(COL_END_TIME);
-        int indexName = cursor.getColumnIndex(COL_NAME);
+        Session session;
+        try (Cursor cursor = dbAdapter.fetchSession(sessionId)) {
+            if (cursor == null) return null;
+            int indexStartTime = cursor
+                    .getColumnIndex(COL_CREATE_TIME);
+            int indexName = cursor.getColumnIndex(COL_NAME);
 
-        // Loop over items
-        long startTime = INVALID_TIME;
-        long stopTime = INVALID_TIME;
-        String name = "";
-        cursor.moveToFirst();
-        if (indexStartTime != -1) {
-            startTime = cursor.getLong(indexStartTime);
-        }
-        if (indexStopTime != -1) {
-            stopTime = cursor.getLong(indexStopTime);
-        }
-        if (indexName != -1) {
-            name = cursor.getString(indexName);
-        }
-        cursor.close();
-        Session session = new Session(null, new Date().getTime(), false);
-        session.mId = sessionId;
-        session.mCreateTime = startTime;
-        session.mEndTime = stopTime;
-        session.mName = name;
-
-        // Get events
-        cursor = dbAdapter.fetchAllEventDataForSession(sessionId);
-        if (cursor != null) {
-            List<Event> eventList = new ArrayList<>();
-            int indexId = cursor.getColumnIndex(COL_ID);
-            int indexTime = cursor
-                    .getColumnIndex(COL_TIME);
-            int indexNote = cursor.getColumnIndex(COL_NOTE);
-            long id = -1;
-            long time = INVALID_TIME;
-            String note = "";
+            // Loop over items
+            long startTime = INVALID_TIME;
+            String name = "";
             cursor.moveToFirst();
-            while (!cursor.isAfterLast()) {
-                if (indexId != -1) {
-                    id = cursor.getLong(indexId);
-                }
-                if (indexTime != -1) {
-                    time = cursor.getLong(indexStartTime);
-                }
-                if (indexNote != -1) {
-                    note = cursor.getString(indexNote);
-                }
-                eventList.add(new Event(id, sessionId, time, note));
-                cursor.moveToNext();
+            if (indexStartTime != -1) {
+                startTime = cursor.getLong(indexStartTime);
+            }
+            if (indexName != -1) {
+                name = cursor.getString(indexName);
             }
             cursor.close();
+            session = new Session(null, new Date().getTime(), false);
+            session.mId = sessionId;
+            session.mCreateTime = startTime;
+            session.mName = name;
+        } catch (Exception ex) {
+            Log.d(TAG, "Failed to get Session from sessionId=" + sessionId, ex);
+            return null;
+        }
 
-            session.mEventList = eventList;
+        // Get events
+        try (Cursor cursorEvents =
+                     dbAdapter.fetchAllEventDataForSession(sessionId)) {
+            if (cursorEvents != null) {
+                List<Event> eventList = new ArrayList<>();
+                int indexId = cursorEvents.getColumnIndex(COL_ID);
+                int indexTime = cursorEvents
+                        .getColumnIndex(COL_TIME);
+                int indexNote = cursorEvents.getColumnIndex(COL_NOTE);
+                long id = -1;
+                long time = INVALID_TIME;
+                String note = "";
+                cursorEvents.moveToFirst();
+                while (!cursorEvents.isAfterLast()) {
+                    if (indexId != -1) {
+                        id = cursorEvents.getLong(indexId);
+                    }
+                    if (indexTime != -1) {
+                        time = cursorEvents.getLong(indexTime);
+                    }
+                    if (indexNote != -1) {
+                        note = cursorEvents.getString(indexNote);
+                    }
+                    eventList.add(new Event(id, sessionId, time, note));
+                    cursorEvents.moveToNext();
+                }
+                cursorEvents.close();
+
+                session.mEventList = eventList;
+            }
+        } catch (Exception ex) {
+            Log.d(TAG, "Error getting events for sessionId=" + sessionId, ex);
+            return null;
         }
         return session;
     }
@@ -173,7 +168,6 @@ public class Session implements IConstants {
         long newEventId = dbAdapter.createEvent(time, note, sessionId);
         Event event = new Event(newEventId, sessionId, time, note);
         mEventList.add(event);
-        setEndTime(dbAdapter);
     }
 
     public boolean removeEvent(EventTimerDbAdapter dbAdapter, Event event) {
@@ -196,8 +190,6 @@ public class Session implements IConstants {
             if (size < 2) {
                 durationStr = Utils.getDurationString(0, 0);
             } else {
-                durationStr = Utils.getDurationString(startTime,
-                        mEventList.get(size - 1).getTime());
                 durationStr = Utils.getDurationString(startTime,
                         mEventList.get(size - 1).getTime());
             }
@@ -231,20 +223,11 @@ public class Session implements IConstants {
     }
 
     public long getEndTime() {
-        return mEndTime;
-    }
-
-    public void setEndTime(EventTimerDbAdapter dbAdapter) {
-        if (dbAdapter == null) {
-            Log.d(TAG, "Session.etEndTime received null EventTimerDbAdapter");
-            return;
-        }
         long endTime = INVALID_TIME;
         if (mEventList.size() > 0) {
             endTime = mEventList.get(mEventList.size() - 1).getTime();
         }
-        mEndTime = endTime;
-        dbAdapter.updateSessionEndTime(mId, mEndTime);
+        return endTime;
     }
 
     public String getName() {

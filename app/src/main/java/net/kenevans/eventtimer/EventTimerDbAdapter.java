@@ -25,8 +25,7 @@ public class EventTimerDbAdapter implements IConstants {
     private static final String DB_CREATE_DATA_TABLE_SESSIONS = "create table "
             + DB_DATA_TABLE_SESSIONS + " (_id integer primary key " +
             "autoincrement, "
-            + COL_START_TIME + " integer not null, "
-            + COL_END_TIME + " integer not null, "
+            + COL_CREATE_TIME + " integer not null, "
             + COL_NAME + " text not null);";
 
     private static final String DB_CREATE_DATA_TABLE_EVENTS = "create table "
@@ -92,19 +91,17 @@ public class EventTimerDbAdapter implements IConstants {
      * return a -1 to indicate failure.
      *
      * @param startTime The start time.
-     * @param stopTime  The stop time.
      * @param name      The name.
      * @return RowId or -1 on failure.
      */
-    public long createSession(long startTime, long stopTime, String name) {
+    public long createSession(long startTime, String name) {
         if (mDb == null) {
             Utils.errMsg(mCtx, "Failed to create session data. Database is " +
                     "null.");
             return -1;
         }
         ContentValues values = new ContentValues();
-        values.put(COL_START_TIME, startTime);
-        values.put(COL_END_TIME, stopTime);
+        values.put(COL_CREATE_TIME, startTime);
         values.put(COL_NAME, name);
 
         long retVal = mDb.insert(DB_DATA_TABLE_SESSIONS, null, values);
@@ -162,10 +159,9 @@ public class EventTimerDbAdapter implements IConstants {
             return null;
         }
         return mDb.query(DB_DATA_TABLE_SESSIONS, new String[]{COL_ID,
-                        COL_START_TIME,
-                        COL_END_TIME, COL_NAME}, null, null, null,
-                null,
-                COL_START_TIME + (ascending ? " ASC" : " DESC"));
+                        COL_CREATE_TIME, COL_NAME},
+                null, null, null, null,
+                COL_CREATE_TIME + (ascending ? " ASC" : " DESC"));
     }
 
     /**
@@ -183,16 +179,6 @@ public class EventTimerDbAdapter implements IConstants {
                 COL_SESSION_ID + " = " + sessionId,
                 null, null, null,
                 COL_TIME + " ASC");
-    }
-
-    /**
-     * Delete the session with the given rowId.
-     *
-     * @param rowId id of data to delete
-     * @return true if deleted, false otherwise.
-     */
-    public boolean deleteSession(long rowId) {
-        return mDb.delete(DB_DATA_TABLE_SESSIONS, COL_ID + "=" + rowId, null) > 0;
     }
 
     /**
@@ -218,85 +204,12 @@ public class EventTimerDbAdapter implements IConstants {
     public Cursor fetchSession(long rowId) throws SQLException {
         Cursor mCursor = mDb.query(true, DB_DATA_TABLE_SESSIONS,
                 new String[]{COL_ID,
-                        COL_START_TIME, COL_END_TIME, COL_NAME}, COL_ID + "="
-                        + rowId, null, null, null, null, null);
+                        COL_CREATE_TIME, COL_NAME}, COL_ID + "=" + rowId,
+                null, null, null, null, null);
         if (mCursor != null) {
             mCursor.moveToFirst();
         }
         return mCursor;
-    }
-
-//    /**
-//     * Return a Cursor positioned at the session that matches the given rowId
-//     *
-//     * @param rowId id of entry to retrieve.
-//     * @return Cursor positioned to matching entry, if found.
-//     * @throws SQLException if entry could not be found/retrieved.
-//     */
-//    public Cursor fetchEvent(long rowId, long sessionId) throws SQLException {
-//        Cursor mCursor = mDb.query(true, DB_DATA_TABLE_EVENTS,
-//                new String[]{COL_ID, COL_TIME, COL_NOTE, COL_SESSION_ID},
-//                COL_ID + "=" + rowId + " AND " + COL_SESSION_ID + " = " + sessionId,
-//                null, null, null, null, null);
-//        if (mCursor != null) {
-//            mCursor.moveToFirst();
-//        }
-//        return mCursor;
-//    }
-
-    /**
-     * Update the session using the details provided. The data to be updated is
-     * specified using the rowId, and it is altered to use the values passed in.
-     *
-     * @param rowId     The row id.
-     * @param startTime The start time.
-     * @param stopTime  The stop time.
-     * @param name      The name.
-     * @return If rows were affected
-     */
-    public boolean updateSession(long rowId, long startTime, long stopTime,
-                                 String name) {
-        ContentValues values = new ContentValues();
-        values.put(COL_START_TIME, startTime);
-        values.put(COL_END_TIME, stopTime);
-        values.put(COL_NAME, name);
-
-        return mDb.update(DB_DATA_TABLE_SESSIONS, values,
-                COL_ID + "=" + rowId, null) > 0;
-    }
-
-    /**
-     * Update the session start time using the details provided. The data to
-     * be updated is
-     * specified using the rowId, and it is altered to use the values passed in.
-     *
-     * @param rowId     The row id.
-     * @param startTime The start time.
-     * @return If rows were affected
-     */
-    public boolean updateSessionStartTime(long rowId, long startTime) {
-        ContentValues values = new ContentValues();
-        values.put(COL_START_TIME, startTime);
-
-        return mDb.update(DB_DATA_TABLE_SESSIONS, values,
-                COL_ID + "=" + rowId, null) > 0;
-    }
-
-    /**
-     * Update the session stop time using the details provided. The data to
-     * be updated is
-     * specified using the rowId, and it is altered to use the values passed in.
-     *
-     * @param rowId    The row id.
-     * @param stopTime The stop time.
-     * @return If rows were affected
-     */
-    public boolean updateSessionEndTime(long rowId, long stopTime) {
-        ContentValues values = new ContentValues();
-        values.put(COL_END_TIME, stopTime);
-
-        return mDb.update(DB_DATA_TABLE_SESSIONS, values,
-                COL_ID + "=" + rowId, null) > 0;
     }
 
     /**
@@ -305,52 +218,12 @@ public class EventTimerDbAdapter implements IConstants {
      * specified using the rowId, and it is altered to use the values passed in.
      *
      * @param rowId The row id.
-     * @param name  The sname.
+     * @param name  The name.
      * @return If rows were affected
      */
     public boolean updateSessionName(long rowId, String name) {
         ContentValues values = new ContentValues();
         values.put(COL_NAME, name);
-
-        return mDb.update(DB_DATA_TABLE_SESSIONS, values,
-                COL_ID + "=" + rowId, null) > 0;
-    }
-
-    /**
-     * Update the event using the details provided. The data to be updated is
-     * specified using the rowId, and it is altered to use the values passed in.
-     *
-     * @param rowId     The row id.
-     * @param time      The time.
-     * @param note      The note.
-     * @param sessionId The session id.
-     * @return If rows were affected
-     */
-    public boolean updateEvent(long rowId, long time, String note,
-                               long sessionId) {
-        ContentValues values = new ContentValues();
-        values.put(COL_TIME, time);
-        values.put(COL_NOTE, note);
-        values.put(COL_SESSION_ID, sessionId);
-
-        return mDb.update(DB_DATA_TABLE_SESSIONS, values,
-                COL_ID + "=" + rowId, null) > 0;
-    }
-
-    /**
-     * Update the event time using the details provided. The data to be
-     * updated is
-     * specified using the rowId, and it is altered to use the values passed in.
-     *
-     * @param rowId     The row id.
-     * @param time      The time.
-     * @param sessionId The session id.
-     * @return If rows were affected
-     */
-    public boolean updateEventTime(long rowId, long time, long sessionId) {
-        ContentValues values = new ContentValues();
-        values.put(COL_TIME, time);
-        values.put(COL_SESSION_ID, sessionId);
 
         return mDb.update(DB_DATA_TABLE_SESSIONS, values,
                 COL_ID + "=" + rowId, null) > 0;
@@ -379,8 +252,7 @@ public class EventTimerDbAdapter implements IConstants {
      * @param sessionId The session id.
      * @return Whether successful.
      */
-    public boolean deleteDataForSession(long sessionId) {
-        boolean retVal = true;
+    public boolean deleteSessionAndData(long sessionId) {
         boolean success1, success2;
         success1 = mDb.delete(DB_DATA_TABLE_SESSIONS,
                 COL_ID + "=" + sessionId, null) > 0;
@@ -388,127 +260,6 @@ public class EventTimerDbAdapter implements IConstants {
                 COL_SESSION_ID + "=" + sessionId, null) > 0;
         return success1 && success2;
     }
-
-//    /**
-//     * Return a Cursor over the HR items in the database having the given the
-//     * start date.
-//     *
-//     * @param date The start date.
-//     * @return Cursor over items.
-//     */
-//    public Cursor fetchAllHrDateDataForStartDate(long date) {
-//        if (mDb == null) {
-//            return null;
-//        }
-//        return mDb.query(DB_DATA_TABLE, new String[]{COL_TIME, COL_HR},
-//                COL_START_TIME + "=" + date, null, null, null,
-//                SORT_ASCENDING);
-//    }
-//
-//    /**
-//     * Return a Cursor over the HR and RR items in the database having the
-//     given
-//     * the start date
-//     *
-//     * @param date The start date.
-//     * @return Cursor over items.
-//     */
-//    public Cursor fetchAllHrRrDateDataForStartDate(long date) {
-//        if (mDb == null) {
-//            return null;
-//        }
-//        return mDb
-//                .query(DB_DATA_TABLE,
-//                        new String[]{COL_TIME, COL_HR, COL_RR},
-//                        COL_START_TIME + "=" + date, null, null,
-//                        null, SORT_ASCENDING);
-//    }
-//
-//    //
-// ///////////////////////////////////////////////////////////////////////
-//    // Get data for start date through end date (ForDate)
-// ///////////////////
-//    //
-// ///////////////////////////////////////////////////////////////////////
-//
-//    /**
-//     * Return a Cursor over the HR items in the database for a given start and
-//     * end times.
-//     *
-//     * @param start The start time.
-//     * @param end   The end time.
-//     * @return Cursor over items.
-//     */
-//    public Cursor fetchAllHrDateDataForDates(long start, long end) {
-//        if (mDb == null) {
-//            return null;
-//        }
-//        return mDb.query(DB_DATA_TABLE, new String[]{COL_TIME, COL_HR},
-//                COL_TIME + ">=" + start + " AND " + COL_TIME
-//                        + "<=" + end, null, null, null,
-//                SORT_ASCENDING);
-//    }
-//
-//    /**
-//     * Return a Cursor over the HR and RR items in the database for a given
-//     * start and end times.
-//     *
-//     * @param start The start time.
-//     * @param end   The end time.
-//     * @return Cursor over items.
-//     */
-//    public Cursor fetchAllHrRrDateDataForDates(long start, long end) {
-//        if (mDb == null) {
-//            return null;
-//        }
-//        return mDb.query(DB_DATA_TABLE,
-//                new String[]{COL_TIME, COL_HR, COL_RR}, COL_TIME + ">="
-//                        + start + " AND " + COL_TIME + "<="
-//                        + end, null, null, null, SORT_ASCENDING);
-//    }
-//
-//    //
-// ///////////////////////////////////////////////////////////////////////
-//    // Get data for start date and later (StartingAtDate)
-// ///////////////////
-//    //
-// ///////////////////////////////////////////////////////////////////////
-//
-//    /**
-//     * Return a Cursor over the list of all items in the database for a given
-//     * time and later.
-//     *
-//     * @param date The time.
-//     * @return Cursor over items.
-//     */
-//    public Cursor fetchAllDataStartingAtDate(long date) {
-//        if (mDb == null) {
-//            return null;
-//        }
-//        return mDb.query(DB_DATA_TABLE, new String[]{COL_ID, COL_TIME,
-//                        COL_START_TIME, COL_HR, COL_RR},
-//                COL_TIME + ">=" + date, null, null, null,
-//                SORT_ASCENDING);
-//    }
-//
-//    /**
-//     * Return a Cursor over the HR and RR items in the database for a given
-//     time
-//     * and later.
-//     *
-//     * @param date The time.
-//     * @return Cursor over items.
-//     */
-//    public Cursor fetchAllHrRrDateDataStartingAtDate(long date) {
-//        if (mDb == null) {
-//            return null;
-//        }
-//        return mDb
-//                .query(DB_DATA_TABLE,
-//                        new String[]{COL_TIME, COL_HR, COL_RR}, COL_TIME
-//                                + ">=" + date, null, null, null,
-//                        SORT_ASCENDING);
-//    }
 
     /**
      * Clears the working database, attaches the new one, copies all data,

@@ -52,7 +52,8 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                     result -> {
                         Log.d(TAG, "openCsvLauncher: result" +
                                 ".getResultCode()=" + result.getResultCode());
-                        if (result.getResultCode() != RESULT_OK) {
+                        if (result.getResultCode() != RESULT_OK ||
+                                result.getData() == null) {
                             Utils.warnMsg(this, "Failed to get CSV file");
                         } else {
                             // Set flag to add it in onResume
@@ -74,7 +75,8 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                                 "Current permissions (initial): "
                                         + UriUtils.getNPersistedPermissions(this));
                         try {
-                            if (result.getResultCode() == RESULT_OK) {
+                            if (result.getResultCode() == RESULT_OK &&
+                                    result.getData() != null) {
                                 // Get Uri from Storage Access Framework.
                                 Uri treeUri = result.getData().getData();
                                 SharedPreferences.Editor editor =
@@ -84,8 +86,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                                     editor.putString(PREF_TREE_URI, null);
                                     editor.apply();
                                     Utils.errMsg(this, "Failed to get " +
-                                            "persistent " +
-                                            "access permissions");
+                                            "persistent access permissions");
                                     return;
                                 }
                                 // Persist access permissions.
@@ -147,6 +148,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         refresh();
         if (mUriToAdd != null) {
             Session session = doAddSessionFromCsvFile(mUriToAdd);
+            refresh();
             mUriToAdd = null;
         }
 
@@ -300,8 +302,8 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         String treeDocumentId = DocumentsContract.getTreeDocumentId(treeUri);
         int nErrors = 0;
         int nWriteErrors;
-        String errMsg = "Error saving sessions:\n";
-        String fileNames = "Saved to:\n";
+        StringBuilder errMsg = new StringBuilder("Error saving sessions:\n");
+        StringBuilder fileNames = new StringBuilder("Saved to:\n");
         String fileName, fileName0;
         String name;
         long sessionId;
@@ -328,13 +330,13 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                     nWriteErrors = doSaveSingleSessionToCsv(sessionId, out);
                     if (nWriteErrors > 0) {
                         nErrors += nWriteErrors;
-                        errMsg += "  " + session.getName();
+                        errMsg.append("  ").append(session.getName());
                     }
-                    fileNames += "  " + docUri.getLastPathSegment() + "\n";
+                    fileNames.append("  ").append(docUri.getLastPathSegment()).append("\n");
                 }
             } catch (Exception ex) {
                 nErrors++;
-                errMsg += "  " + session.getName();
+                errMsg.append("  ").append(session.getName());
             }
         }
         String msg = "";
@@ -370,8 +372,9 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         if (nErrors > 0) {
             return nErrors;
         }
-        Session session = Session.getSessionFromDb(mDbAdapter, sessionId);
+        Session session;
         try {
+            session = Session.getSessionFromDb(mDbAdapter, sessionId);
             long createTime = session.getCreateTime();
             long startTime = session.getFirstEventTime();
             long endTime = session.getEndTime();
@@ -452,7 +455,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         long sessionId;
         for (SessionDisplay session : checkedSessions) {
             sessionId = session.getId();
-            boolean success = mDbAdapter.deleteDataForSession(sessionId);
+            boolean success = mDbAdapter.deleteSessionAndData(sessionId);
             if (!success) {
                 String msg = "Failed to delete all or part of Session "
                         + session.getName();
@@ -488,10 +491,11 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                 long createTime = INVALID_TIME;
                 long time;
                 long sessionId = -1;
-                String name = "", note = "";
+                String name = "", note;
                 boolean createTimeDefined = false, nameDefined = false;
                 String[] tokens;
                 String line;
+                boolean doHeader = true;
                 while ((line = in.readLine()) != null) {
                     lineNum++;
                     tokens = line.trim().split(CSV_DELIM);
@@ -503,32 +507,29 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                         // Comment
                         continue;
                     }
-                    if (tokens[0].trim().startsWith("Create Time")) {
-                        createTime = dateFormat.parse(tokens[1]).getTime();
-                        createTimeDefined = true;
+                    if (doHeader) {
+                        if (tokens[0].trim().startsWith("Create Time")) {
+                            createTime = dateFormat.parse(tokens[1]).getTime();
+                            createTimeDefined = true;
+                            continue;
+                        }
+                        if (tokens[0].trim().startsWith("Name")) {
+                            name = tokens[1];
+                            nameDefined = true;
+                            continue;
+                        }
+                        if (createTimeDefined && nameDefined) {
+                            doHeader = false;
+                        }
+                        // Skip anything else
                         continue;
                     }
-                    if (tokens[0].trim().startsWith("Name")) {
-                        name = tokens[1];
-                        nameDefined = true;
-                        continue;
-                    }
-                    if (tokens[0].trim().startsWith("Start Time")) {
-                        continue;
-                    }
-                    if (tokens[0].trim().startsWith("End Time")) {
-                        continue;
-                    }
-                    if (tokens[0].trim().startsWith("Events")) {
-                        continue;
-                    }
-                    if (tokens[0].trim().startsWith("Duration")) {
-                        continue;
-                    }
+                    // Skip the column names line
                     if (tokens[0].trim().startsWith("time")) {
                         continue;
                     }
-                    if (session == null && createTimeDefined && nameDefined) {
+                    // Create the session
+                    if (session == null) {
                         session = new Session(mDbAdapter, createTime);
                         session.setName(mDbAdapter, name);
                         sessionId = session.getId();
@@ -540,10 +541,8 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                     }
                     time = Long.parseLong(tokens[2]);
                     note = tokens[1];
-                    if (session != null) {
-                        session.addEvent(mDbAdapter, sessionId, time,
-                                note);
-                    }
+                    session.addEvent(mDbAdapter, sessionId, time,
+                            note);
                 }
                 // Check if ok
                 if (session == null) {

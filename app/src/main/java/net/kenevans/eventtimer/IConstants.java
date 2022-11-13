@@ -147,11 +147,7 @@ interface IConstants {
     /**
      * Database column for the start time.
      */
-    String COL_START_TIME = "start_time";
-    /**
-     * Database column for the stop time.
-     */
-    String COL_END_TIME = "stop_time";
+    String COL_CREATE_TIME = "create_time";
     /**
      * Database column for the name.
      */
