@@ -509,7 +509,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                     }
                     if (doHeader) {
                         if (tokens[0].trim().startsWith("Create Time")) {
-                            createTime = dateFormat.parse(tokens[1]).getTime();
+                            createTime = Long.parseLong(tokens[2]);
                             createTimeDefined = true;
                             continue;
                         }
