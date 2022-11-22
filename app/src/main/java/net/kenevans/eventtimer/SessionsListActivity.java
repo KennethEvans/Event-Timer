@@ -819,6 +819,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             Log.e(TAG, msg, ex);
             Utils.excMsg(this, msg, ex);
         }
+        refresh();
     }
 
     /**

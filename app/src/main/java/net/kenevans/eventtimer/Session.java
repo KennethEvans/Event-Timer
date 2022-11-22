@@ -24,7 +24,7 @@ import java.util.Locale;
  * the first event. These may be different.
  * <p>
  * A Session is stored in the database in the table session with columns
- * _id,start_time, end_time, and name. An Event is stored in the database
+ * _id, create_time, and name. An Event is stored in the database
  * in the events table with columns _id, time, note, and session_id.
  */
 public class Session implements IConstants {
