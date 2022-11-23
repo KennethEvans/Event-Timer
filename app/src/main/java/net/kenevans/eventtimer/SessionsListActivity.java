@@ -147,7 +147,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         super.onResume();
         refresh();
         if (mUriToAdd != null) {
-            Session session = doAddSessionFromCsvFile(mUriToAdd);
+            doAddSessionFromCsvFile(mUriToAdd);
             refresh();
             mUriToAdd = null;
         }
@@ -177,6 +177,9 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         // as you specify a parent activity in AndroidManifest.xml.
         if (item.getItemId() == R.id.menu_discard) {
             promptDiscardSession();
+            return true;
+        } else if (item.getItemId() == R.id.menu_save_summaries) {
+            saveSummaries();
             return true;
         } else if (item.getItemId() == R.id.menu_save) {
             saveSessionsToCsv();
@@ -280,7 +283,79 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
     }
 
     /**
-     * Saves the selected sessions.
+     * Saves the selected sessions summaries as text.
+     */
+    public void saveSummaries() {
+        ArrayList<SessionDisplay> checkedSessions = mSessionListAdapter
+                .getCheckedSessions();
+        if (checkedSessions.size() == 0) {
+            Utils.errMsg(this, "There are no sessions to save");
+            return;
+        }
+        // Get the saved tree Uri
+        SharedPreferences prefs = getSharedPreferences(MAIN_ACTIVITY,
+                MODE_PRIVATE);
+        String treeUriStr = prefs.getString(PREF_TREE_URI, null);
+        if (treeUriStr == null) {
+            Utils.errMsg(this, "There is no data directory set");
+            return;
+        }
+        // Get a docTree Uri
+        Uri treeUri = Uri.parse(treeUriStr);
+        String treeDocumentId = DocumentsContract.getTreeDocumentId(treeUri);
+        int nErrors = 0;
+        int nWriteErrors;
+        StringBuilder errMsg = new StringBuilder("Error saving summaries:\n");
+        StringBuilder fileNames = new StringBuilder("Saved to:\n");
+        String fileName;
+        String name;
+        long sessionId;
+        for (SessionDisplay session : checkedSessions) {
+            try {
+                sessionId = session.getId();
+                name = session.getSafeName();
+                fileName = SESSION_CSV_NAME_PREFIX + name + ".txt";
+                Uri docTreeUri =
+                        DocumentsContract.buildDocumentUriUsingTree(treeUri,
+                                treeDocumentId);
+                // Get a docUri and ParcelFileDescriptor
+                ContentResolver resolver = this.getContentResolver();
+                ParcelFileDescriptor pfd;
+                Uri docUri = DocumentsContract.createDocument(resolver,
+                        docTreeUri,
+                        "text/plain", fileName);
+                pfd = getContentResolver().
+                        openFileDescriptor(docUri, "w");
+                try (FileWriter writer =
+                             new FileWriter(pfd.getFileDescriptor());
+                     BufferedWriter out = new BufferedWriter(writer)) {
+                    // Write the session data
+                    nWriteErrors = doSaveSingleSummary(sessionId, out);
+                    if (nWriteErrors > 0) {
+                        nErrors += nWriteErrors;
+                        errMsg.append("  ").append(session.getName());
+                    }
+                    fileNames.append("  ").append(docUri.getLastPathSegment()).append("\n");
+                }
+            } catch (Exception ex) {
+                nErrors++;
+                errMsg.append("  ").append(session.getName());
+            }
+        }
+        String msg = "";
+        if (nErrors > 0) {
+            msg += errMsg;
+        }
+        msg += fileNames;
+        if (nErrors > 0) {
+            Utils.errMsg(this, msg);
+        } else {
+            Utils.infoMsg(this, msg);
+        }
+    }
+
+    /**
+     * Saves the selected sessions as tab-delimited CSV.
      */
     public void saveSessionsToCsv() {
         ArrayList<SessionDisplay> checkedSessions = mSessionListAdapter
@@ -304,7 +379,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         int nWriteErrors;
         StringBuilder errMsg = new StringBuilder("Error saving sessions:\n");
         StringBuilder fileNames = new StringBuilder("Saved to:\n");
-        String fileName, fileName0;
+        String fileName;
         String name;
         long sessionId;
         for (SessionDisplay session : checkedSessions) {
@@ -349,6 +424,66 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         } else {
             Utils.infoMsg(this, msg);
         }
+    }
+
+    /**
+     * Writes the session data for the given startTime to the given
+     * BufferedWriter.
+     *
+     * @param sessionId The session id.
+     * @param out       The BufferedWriter.
+     * @return The number of errors.
+     */
+    private int doSaveSingleSummary(long sessionId, BufferedWriter out) {
+        int nErrors = 0;
+        if (mDbAdapter == null) {
+            Log.d(TAG, "doSaveSessionToCsv: database adapter is null");
+            nErrors++;
+        }
+        if (out == null) {
+            Log.d(TAG, "doSaveSessionToCsv: BufferedWriter is null");
+            nErrors++;
+        }
+        if (nErrors > 0) {
+            return nErrors;
+        }
+        Session session;
+        try {
+            session = Session.getSessionFromDb(mDbAdapter, sessionId);
+            long startTime = session.getFirstEventTime();
+            long endTime = session.getEndTime();
+            String startTimeStr = dateFormat.format(startTime);
+            String endTimeStr = dateFormat.format(endTime);
+            String sessionName = session.getName();
+            String nameStr = sessionName;
+            if (sessionName == null || sessionName.length() == 0) {
+                nameStr = "Not Named";
+            }
+            int nEvents = session.getEventList().size();
+            String nEventsStr;
+            nEventsStr = String.format(Locale.US, "%d", nEvents);
+            String durationStr = session.getDuration();
+            out.write("Name:" + TAB + nameStr + "\n");
+            out.write("Start Time:" + TAB + startTimeStr + TAB + startTime +
+                    "\n");
+            out.write("End Time: " + TAB + endTimeStr + TAB + endTime + "\n");
+            out.write("Events: " + TAB + nEventsStr + "\n");
+            out.write("Duration: " + TAB + durationStr + "\n");
+
+            // Loop over events
+            String line, note;
+            long time;
+            for (Event event : session.getEventList()) {
+                time = event.getTime();
+                line = summaryDateFormat.format(time) + " ";
+                note = event.getNote();
+                line += note + "\n";
+                out.write(line);
+            }
+        } catch (Exception ex) {
+            nErrors++;
+        }
+        return nErrors;
     }
 
     /**
@@ -594,8 +729,12 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                 builder.setPositiveButton(android.R.string.ok,
                         (dialog, which) -> {
                             dialog.dismiss();
-                            session.setName(mDbAdapter,
-                                    input.getText().toString());
+                            String newName = input.getText().toString();
+                            boolean res = session.setName(mDbAdapter, newName);
+                            if (!res) {
+                                Utils.errMsg(this, "Error setting name: |"
+                                        + newName + "|");
+                            }
                             refresh();
                         });
                 builder.setNegativeButton(android.R.string.cancel,

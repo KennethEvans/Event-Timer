@@ -9,21 +9,27 @@
         android:title="@string/menu_save"
         app:showAsAction="never" />
     <item
-        android:id="@+id/menu_discard"
+        android:id="@+id/menu_save_summaries"
         android:checkable="false"
         android:orderInCategory="2"
+        android:title="@string/menu_save_summaries"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_discard"
+        android:checkable="false"
+        android:orderInCategory="3"
         android:title="@string/menu_discard"
         app:showAsAction="never" />
     <item
         android:id="@+id/menu_check_all"
         android:checkable="false"
-        android:orderInCategory="3"
+        android:orderInCategory="4"
         android:title="@string/menu_check_all"
         app:showAsAction="never" />
     <item
         android:id="@+id/menu_check_none"
         android:checkable="false"
-        android:orderInCategory="4"
+        android:orderInCategory="5"
         android:title="@string/menu_check_none"
         app:showAsAction="never" />
     <item

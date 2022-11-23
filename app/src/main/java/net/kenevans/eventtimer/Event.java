@@ -91,9 +91,9 @@ public class Event implements IConstants {
         return mNote;
     }
 
-    public void setNote(EventTimerDbAdapter dbAdapter, String note) {
+    public boolean setNote(EventTimerDbAdapter dbAdapter, String note) {
         this.mNote = note;
-        dbAdapter.updateEventNote(mId, mNote);
+        return dbAdapter.updateEventNote(mId, mNote);
     }
 
     public long getId() {

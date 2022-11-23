@@ -1,12 +1,10 @@
 package net.kenevans.eventtimer;
 
-import android.bluetooth.BluetoothAdapter;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.InputType;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -18,14 +16,10 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -33,16 +27,11 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
     TextView mTextViewEvent;
     TextView mTextViewTime;
     private ListView mListView;
-    private int mListViewPosition = -1;
-    private Menu mMenu;
     private Session mCurrentSession;
-    private Button mButtonStart;
-    private Button mButtonStop;
-    private Button mButtonRecord;
     private EventTimerDbAdapter mDbAdapter;
 
     // Set up the timer
-    private Handler mHandler = new Handler(Looper.getMainLooper());
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
     private boolean mTimerStarted;
     Runnable mRunnable = new Runnable() {
         @Override
@@ -68,11 +57,11 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         mTextViewEvent = findViewById(R.id.event);
         mListView = findViewById(R.id.sessionListView);
 
-        mButtonStart = findViewById(R.id.buttonStart);
+        Button mButtonStart = findViewById(R.id.buttonStart);
         mButtonStart.setOnClickListener(v -> start());
-        mButtonStop = findViewById(R.id.buttonStop);
+        Button mButtonStop = findViewById(R.id.buttonStop);
         mButtonStop.setOnClickListener(v -> stop());
-        mButtonRecord = findViewById(R.id.buttonRecord);
+        Button mButtonRecord = findViewById(R.id.buttonRecord);
         mButtonRecord.setOnClickListener(v -> record());
 
         mTextViewEvent.setOnClickListener(v -> renameSession(mCurrentSession));
@@ -152,50 +141,14 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         editor.apply();
         resetListView();
         updateInfo();
-
-//        // Check if PREF_TREE_URI is valid and remove it if not
-//        if (UriUtils.getNPersistedPermissions(this) <= 0) {
-//            SharedPreferences.Editor editor =
-//                    getSharedPreferences(MAIN_ACTIVITY, MODE_PRIVATE)
-//                            .edit();
-//            editor.putString(PREF_TREE_URI, null);
-//            editor.apply();
-//        }
-
     }
-
-//    @Override
-//    public void onBackPressed() {
-//        // This seems to be necessary with Android 12
-//        // Otherwise onDestroy is not called
-//        Log.d(TAG, this.getClass().getSimpleName() + ": onBackPressed");
-//        finish();
-//        super.onBackPressed();
-//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 //        Log.d(TAG, this.getClass().getSimpleName() + " onCreateOptionsMenu");
 //        Log.d(TAG, "    mPlaying=" + mPlaying);
-        mMenu = menu;
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main_menu, menu);
-//        if (mApi == null) {
-//            mMenu.findItem(R.id.pause).setTitle("Start");
-//            mMenu.findItem(R.id.save).setVisible(false);
-//        } else if (mPlaying) {
-//            mMenu.findItem(R.id.pause).setIcon(ResourcesCompat.
-//                    getDrawable(getResources(),
-//                            R.drawable.ic_stop_white_36dp, null));
-//            mMenu.findItem(R.id.pause).setTitle("Pause");
-//            mMenu.findItem(R.id.save).setVisible(false);
-//        } else {
-//            mMenu.findItem(R.id.pause).setIcon(ResourcesCompat.
-//                    getDrawable(getResources(),
-//                            R.drawable.ic_play_arrow_white_36dp, null));
-//            mMenu.findItem(R.id.pause).setTitle("Start");
-//            mMenu.findItem(R.id.save).setVisible(true);
-//        }
         return true;
     }
 
@@ -206,89 +159,6 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
             onBackPressed();
             return true;
         }
-
-//        if (id == R.id.pause) {
-//            if (mApi == null) {
-//                return true;
-//            }
-//            if (mPlaying) {
-//                // Turn it off
-//                setLastHr();
-//                mStopTime = new Date();
-//                mPlaying = false;
-//                setPanBehavior();
-//                if (mEcgDisposable != null) {
-//                    // Turns it off
-//                    streamECG();
-//                }
-//                mMenu.findItem(R.id.pause).setIcon(ResourcesCompat.
-//                        getDrawable(getResources(),
-//                                R.drawable.ic_play_arrow_white_36dp, null));
-//                mMenu.findItem(R.id.pause).setTitle("Start");
-//                mMenu.findItem(R.id.save).setVisible(true);
-//            } else {
-//                // Turn it on
-//                setLastHr();
-//                mStopTime = new Date();
-//                mPlaying = true;
-//                setPanBehavior();
-//                mTextViewTime.setText(getString(R.string.elapsed_time,
-//                        0.0));
-//                // Clear the plot
-//                mECGPlotter.clear();
-//                mQRSPlotter.clear();
-//                mHRPlotter.clear();
-//                if (mEcgDisposable == null) {
-//                    // Turns it on
-//                    streamECG();
-//                }
-//                mMenu.findItem(R.id.pause).setIcon(ResourcesCompat.
-//                        getDrawable(getResources(),
-//                                R.drawable.ic_stop_white_36dp, null));
-//                mMenu.findItem(R.id.pause).setTitle("Pause");
-//                mMenu.findItem(R.id.save).setVisible(false);
-//            }
-//            return true;
-//        } else if (id == R.id.save_plot) {
-//            saveDataWithNote(SaveType.PLOT);
-//            return true;
-//        } else if (id == R.id.save_data) {
-//            saveDataWithNote(SaveType.DATA);
-//            return true;
-//        } else if (id == R.id.save_both) {
-//            saveDataWithNote(SaveType.BOTH);
-//            return true;
-//        } else if (id == R.id.save_all) {
-//            saveDataWithNote(SaveType.ALL);
-//            return true;
-//        } else if (id == R.id.save_device_data) {
-//            doSaveSessionData(SaveType.DEVICE_HR);
-//            return true;
-//        } else if (id == R.id.save_qrs_data) {
-//            doSaveSessionData(SaveType.QRS_HR);
-//            return true;
-//        } else if (id == R.id.info) {
-//            info();
-//            return true;
-//        } else if (id == R.id.restart_api) {
-//            restartApi();
-//            return true;
-//        } else if (id == R.id.redo_plot_setup) {
-//            redoPlotSetup();
-//            return true;
-//        } else if (id == R.id.device_id) {
-//            selectDeviceId();
-//            return true;
-//        } else if (id == R.id.choose_data_directory) {
-//            chooseDataDirectory();
-//            return true;
-//        } else if (id == R.id.help) {
-//            showHelp();
-//            return true;
-//        } else if (item.getItemId() == R.id.menu_settings) {
-//            showSettings();
-//            return true;
-//        }
         return false;
     }
 
@@ -351,10 +221,10 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         builder.setPositiveButton(android.R.string.ok,
                 (dialog, which) -> {
                     dialog.dismiss();
+                    String note = input.getText().toString();
                     long now = new Date().getTime();
                     mCurrentSession.addEvent(mDbAdapter,
-                            mCurrentSession.getId(),
-                            now, String.valueOf(input.getText()));
+                            mCurrentSession.getId(), now, note);
                     mCurrentSession = Session.getSessionFromDb(mDbAdapter,
                             mCurrentSession.getId());
                     updateInfo();
@@ -378,6 +248,9 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         mTimerStarted = false;
     }
 
+    /**
+     * Updates the info part of the screen.
+     */
     private void updateInfo() {
 //        if(mCurrentSession != null) {
 //            Log.d(TAG, this.getClass().getSimpleName() + ": updateInfo: "
@@ -404,6 +277,8 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         if (event == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT |
+                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         if (event.getNote() != null) {
             input.setText(event.getNote());
         }
@@ -413,7 +288,14 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         builder.setPositiveButton(android.R.string.ok,
                 (dialog, which) -> {
                     dialog.dismiss();
-                    event.setNote(mDbAdapter, String.valueOf(input.getText()));
+                    String note = input.getText().toString();
+                    boolean res = event.setNote(mDbAdapter, note);
+                    mCurrentSession = Session.getSessionFromDb(mDbAdapter,
+                            mCurrentSession.getId());
+                    if (!res) {
+                        Utils.errMsg(this, "Error setting note: |"
+                                + note + "|");
+                    }
                     resetListView();
                 });
         builder.setNegativeButton(android.R.string.cancel,
@@ -436,8 +318,12 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         builder.setPositiveButton(android.R.string.ok,
                 (dialog, which) -> {
                     dialog.dismiss();
-                    session.setName(mDbAdapter,
-                            String.valueOf(input.getText()));
+                    String name = input.getText().toString();
+                    boolean res = session.setName(mDbAdapter, name);
+                    if (!res) {
+                        Utils.errMsg(this, "Error setting name: |"
+                                + name + "|");
+                    }
                     resetListView();
                     // Reset the title
                     if (getSupportActionBar() != null) {
@@ -476,6 +362,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
     /**
      * Resets the file list.
      */
+    @SuppressWarnings("unchecked")
     private void resetListView() {
         if (mCurrentSession == null) {
             Log.d(TAG, this.getClass().getSimpleName() + ": resetListView: "
@@ -486,18 +373,14 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         }
         if (mCurrentSession == null) {
             Log.d(TAG, "resetListView: mCurrentSession is null");
-            ArrayAdapter adapter = (ArrayAdapter) mListView.getAdapter();
-            if (adapter != null) {
-                adapter.clear();
-            }
+            ArrayAdapter<EventEx> adapter = (ArrayAdapter<EventEx>) mListView.getAdapter();
+            if (adapter != null) adapter.clear();
             return;
         }
         if (mCurrentSession.getEventList() == null) {
             Log.d(TAG, "resetListView: mCurrentSession.getEventList() is null");
-            ArrayAdapter adapter = (ArrayAdapter) mListView.getAdapter();
-            if (adapter != null) {
-                adapter.clear();
-            }
+            ArrayAdapter<EventEx> adapter = (ArrayAdapter<EventEx>) mListView.getAdapter();
+            if (adapter != null) adapter.clear();
             return;
         }
 
@@ -506,7 +389,6 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         int nEvents = mCurrentSession.getEventList().size();
         if (nEvents > 0) {
             Event event;
-            EventEx eventEx;
             for (int i = nEvents - 1; i >= 0; i--) {
                 event = mCurrentSession.getEventList().get(i);
                 eventListEx.add(new EventEx(mDbAdapter, event));
@@ -553,32 +435,5 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
 
     public void requestPermissions() {
         Log.d(TAG, "requestPermissions");
-//        BluetoothManager bluetoothManager =
-//                (BluetoothManager) getSystemService(Context
-//                .BLUETOOTH_SERVICE);
-//        if (bluetoothManager != null) {
-//            BluetoothAdapter mBluetoothAdapter = bluetoothManager
-//            .getAdapter();
-//            if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
-//                Intent enableBtIntent =
-//                        new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//                enableBluetoothLauncher.launch(enableBtIntent);
-//            }
-//        }
-//
-//        if (Build.VERSION.SDK_INT >= 31) {
-//            // Android 12 (S)
-//            this.requestPermissions(new String[]{
-//                            Manifest.permission.BLUETOOTH_SCAN,
-//                            Manifest.permission.BLUETOOTH_CONNECT},
-//                    REQ_ACCESS_PERMISSIONS);
-//        } else {
-//            // Android 6 (M)
-//            this.requestPermissions(new String[]{
-//                            Manifest.permission.ACCESS_FINE_LOCATION},
-//                    REQ_ACCESS_PERMISSIONS);
-//        }
-
     }
-
 }

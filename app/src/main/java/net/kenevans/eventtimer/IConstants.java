@@ -87,6 +87,12 @@ interface IConstants {
             new SimpleDateFormat("E MMM d, yyyy HH:mm:ss", Locale.US);
 
     /**
+     * The formatter to use for formatting summaries.
+     */
+    SimpleDateFormat summaryDateFormat =
+            new SimpleDateFormat("E HH:mm:ss", Locale.US);
+
+    /**
      * The formatter to use for formatting session dates.
      */
     SimpleDateFormat csvDateFormat =
@@ -175,6 +181,10 @@ interface IConstants {
      * Delimiter for saving CSV files.
      */
     String CSV_DELIM = "\t";
+    /**
+     * Tab String.
+     */
+    String TAB = "\t";
     /**
      * Template for creating the file name for saving the database.
      */

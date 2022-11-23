@@ -234,9 +234,9 @@ public class Session implements IConstants {
         return mName;
     }
 
-    public void setName(EventTimerDbAdapter dbAdapter, String name) {
+    public boolean setName(EventTimerDbAdapter dbAdapter, String name) {
         this.mName = name;
-        dbAdapter.updateSessionName(mId, mName);
+        return dbAdapter.updateSessionName(mId, mName);
     }
 
     public List<Event> getEventList() {

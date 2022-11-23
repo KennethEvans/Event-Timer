@@ -25,6 +25,7 @@
     <string name="menu_merge">Merge</string>
     <string name="menu_split">Split</string>
     <string name="menu_save">Save Sessions</string>
+    <string name="menu_save_summaries">Save Summaries</string>
     <string name="menu_session_manager">Session Manager</string>
     <string name="menu_check_all">Check All</string>
     <string name="menu_check_none">Check None</string>
