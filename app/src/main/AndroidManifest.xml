@@ -26,6 +26,10 @@
             android:name=".SessionActivity"
             android:exported="false">
         </activity>
+        <activity
+            android:name=".InfoActivity"
+            android:label="@string/help_title">
+        </activity>
     </application>
 
 </manifest>

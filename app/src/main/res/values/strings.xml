@@ -4,7 +4,7 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
     <string name="unnamed_session">Not Named</string>
-    <string name="floating_action_button_desc">Foating Action Button</string>
+    <string name="floating_action_button_desc">Floating Action Button</string>
     <string name="not_running_label">Not running</string>
     <string name="session_delete_prompt">Deleting %d sessions.  This cannot be undone.  Continue?</string>
     <string name="confirm">Confirm</string>
@@ -39,16 +39,16 @@
     <string name="menu_read_battery_level">Get Battery level</string>
     <string name="info_item">Info</string>
     <string name="choose_data_directory_item">Choose Data Directory</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="record">Record</string>
+    <string name="event_info">Time: %1$s\nStart Time: %2$s\nEnd Time: %3$s\nEvents: %4$s\nElapsed Time: %5$s\n</string>
 
     <!-- Info/Help -->
     <string name="help_url_not_found">Cannot find Help URL</string>
     <string name="help_item">Help</string>
     <string name="help_title">Help</string>
     <string name="help_show_error">Error showing help</string>
-    <string name="start">Start</string>
-    <string name="stop">Stop</string>
-    <string name="record">Record</string>
-    <string name="event_info">Time: %1$s\nStart Time: %2$s\nEnd Time: %3$s\nEvents: %4$s\nElapsed Time: %5$s\n</string>
 
     <!-- Utils -->
     <string name="ok">OK</string>

@@ -196,6 +196,9 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         } else if (item.getItemId() == R.id.info) {
             info();
             return true;
+        } else if (item.getItemId() == R.id.help) {
+            showHelp();
+            return true;
         } else if (item.getItemId() == R.id.menu_save_database) {
             saveDatabase();
             return true;
@@ -773,6 +776,24 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         } catch (Throwable t) {
             Utils.excMsg(this, "Error showing info", t);
             Log.e(TAG, "Error showing info", t);
+        }
+    }
+
+    /**
+     * Show the help.
+     */
+    private void showHelp() {
+        Log.v(TAG, this.getClass().getSimpleName() + " showHelp");
+        try {
+            // Start the InfoActivity
+            Intent intent = new Intent();
+            intent.setClass(this, InfoActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra(INFO_URL, "file:///android_asset/EventTimer.html");
+            startActivity(intent);
+        } catch (Exception ex) {
+            Utils.excMsg(this, getString(R.string.help_show_error), ex);
         }
     }
 

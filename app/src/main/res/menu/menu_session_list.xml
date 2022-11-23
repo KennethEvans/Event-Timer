@@ -43,12 +43,16 @@
         android:orderInCategory="7"
         android:title="@string/info_item" />
     <item
-        android:id="@+id/menu_save_database"
+        android:id="@+id/help"
         android:orderInCategory="8"
+        android:title="@string/help_item" />
+    <item
+        android:id="@+id/menu_save_database"
+        android:orderInCategory="9"
         android:title="@string/menu_save_database" />
     <item
         android:id="@+id/menu_replace_database"
-        android:orderInCategory="9"
+        android:orderInCategory="10"
         android:title="@string/menu_restore_database" />
     <item
         android:id="@+id/choose_data_directory"

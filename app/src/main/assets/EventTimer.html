@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>BLE Cardiac Monitor</title>
+</head>
+<body>
+<h3 align="center">Event Timer </h3>
+<p align="left">Event Timer is an app for managing events. An event consists of a time and an optional note. The time is the time the event was recorded. A session consists of zero or more events. A session also has a create time, a start time (the time of the first event), a stop time (the time of the last event), and a name. The create time is not currently used in the interface, but is kept for historical reasons. From these the duration, which is the time from the previous event to this event is also available. A session could correspond, for example, to lap times as measured by a stopwatch, or the times you woke up while sleeping. Event Timer was originally designed for the latter purpose. </p>
+<p align="left">The data are stored in a SQLite database. The actual database in use is necessarily stored in a directory which is not easily accessed owing to Android security policy. However, the database can be saved, and the saved version may be read in other programs that handle SQLite databases. Saved databases can also be imported.</p>
+<p align="left">All files, either saved or read, are stored in a directory  which you can choose with the standard Android file picker. You must give permission for Event Timer to use that directory. The directory and the permission are saved for the next time Event Timer is run.</p>
+<p align="left"> Times and dates are stored in the database and internally as integers representing the number of milliseconds since the start of 1/1/1970 in the UTC time zone (also known as the GMT time zone). They are the times in the local time zone when the events were recorded. The times are shown in a human-readable format in the user interface, not as these integers. If viewed in a different time zone, they will show differently. For example, 1:00 pm may show as 2:00 pm. No attempt has been made to keep track of time zones. </p>
+<p>The interface consists of two screens:</p>
+<ul>
+  <li><a href="#sessionlist">Session List </a></li>
+  <li><a href="#sessions">Sessions</a></li>
+</ul>
+<h3 align="left"><a name="sessionlist" id="sessionlist"></a>Session List  Screen </h3>
+<p align="left">This is the main screen. It shows a list of the saved sessions with a checkbox beside each. You can click on a session to manage it individually in the Session screen. You can add a session with the floating &quot;+&quot; button. The following menu items are available. </p>
+<p align="left"><strong>Save Sessions</strong></p>
+<p align="left">Save the checked session as separate CSV files. The name is of the form EventTimer-yyyy-MM-dd-HH-mm-ss.csv. These files are tab, not comma delimited, spreadsheet files. The reason is that the human-readable dates have commas. This may cause a problem with spreadsheets that implicitly assume CSV files are comma-delimited. Most spreadsheets, however, either determine the delimiter automatically or let you specify it. Another advantage of tab-delimited is that the contents may be printed as text files and look reasonably good.</p>
+<p align="left">The first rows of the file contain the create time start time, end time, number of events, the duration, and the name. The events are in columns named time, note, and java-time. java-time is the time described above and is an integer. It is accurate to milliseconds, whereas the human-readable times are only accurate to seconds. </p>
+<p align="left"><strong>Save Summaries </strong></p>
+<p align="left">This is the same as Save Sessions except that all sessions are saved in a single file with a name of the form EventTimer-yyyy-MM-dd-HH-mm-ss.txt. These contain summary information for the session and have most of the items for CSV files without the create time and java time. They are hence cleaner. </p>
+<p align="left"><strong>Discard Sessions </strong></p>
+<p align="left">Delete the checked sessions. </p>
+<p align="left"><strong>Check All</strong></p>
+<p align="left">A convenience method to check all sessions. </p>
+<p align="left"><strong>Check None</strong></p>
+<p align="left">A convenience method to uncheck all sessions. </p>
+<p align="left"><strong>Add Session from CSV </strong></p>
+<p align="left">This item adds a session from a stored CSV file. It gives you an opportunity to rename it so it can be distinguished form another session with the same name already in the database. </p>
+<p align="left"><strong>Info</strong></p>
+<p align="left">Show information about the current configuration, including needed permissions and the currently selected data directory.</p>
+<p align="left"><strong>Help</strong></p>
+<p align="left">Brings up this page. </p>
+<h4>Save Database </h4>
+<p>Saves the current database itself in the form EventTimer.yyyy-MM-dd-HHmmss.db. This database can be restored with the Replace Data base option. It can be moved elsewhere and examined or changed with applications that do that for SQLite databases in general. </p>
+<h4>Replace Database</h4>
+<p>Restores the database from one of the saved database files. </p>
+<p align="left"><strong>Choose Data Directory</strong></p>
+<p align="left">Brings up a system file chooser to choose the data directory. This is where all the data except the database itself is stored.  It can be anywhere the file chooser allows, which should include the SD card. </p>
+<h3 align="left"><a name="sessions" id="sessions"></a>Sessions</h3>
+<p align="left">The Session Screen is where you manage a single session. The name at the top is the session name. Below that is the current time. It is only useful to be aware of the current time. Events are recorded at the time the RECORD button is pushed. Selecting the START or STOP button enables or disables displaying the current time.</p>
+<p align="left">Below the current time is session information. If you tap it, you can change the session name. </p>
+<p align="left">Events are recorded when the RECORD button is pushed. You are prompted for a note. You can also record events with either of the Volume Up/Down buttons on the device. The events are listed with the latest first. A created event is automatically created when you make a new session. It can be deleted if you do not want it. If you click an event, you have a choice to edit or delete it. Editing is confined to changing the note.</p>
+<p align="left">The Session screen will keep the device on as long as it is available. It you want to use Event Timer to record sleep events, you can leave the device on with the screen pointed down (so the light is not distacting). Events can then be added without entering passwords to log in. This, of course, assumes the device has enough battery capacity to last that long. </p>
+<h3 align="left"><a name="acknowledgement" id="acknowledgement"></a>Acknowledgements</h3>
+<p>&nbsp;</p>
+</body>
+</html>

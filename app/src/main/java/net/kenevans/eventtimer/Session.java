@@ -16,10 +16,10 @@ import java.util.Locale;
  * associated.
  * <p>
  * A session also has a start time and an end time. The end time is the time
- * of the last event or invalid there is none. The start time is the time the
+ * of the last event or invalid there is none. The create time is the time the
  * session was created.
  * <p>
- * Note that the start time returned by getCreateTime is the time the session
+ * Note that the create time returned by getCreateTime is the time the session
  * was created whereas the time returned by getFirstEventTime is the time of
  * the first event. These may be different.
  * <p>

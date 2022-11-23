@@ -41,6 +41,11 @@ interface IConstants {
     String PACKAGE_NAME = "net.kenevans.eventtimer";
 
     /**
+     * Key for information URL sent to InfoActivity.
+     */
+    String INFO_URL = "InformationURL";
+
+    /**
      * Value for a database date value indicating invalid.
      */
     long INVALID_TIME = Long.MIN_VALUE;
