@@ -468,11 +468,11 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             String nEventsStr;
             nEventsStr = String.format(Locale.US, "%d", nEvents);
             String durationStr = session.getDuration();
-            out.write("Name:" + TAB + nameStr + "\n");
-            out.write("Start Time:" + TAB + startTimeStr + "\n");
-//            out.write("End Time: " + TAB + endTimeStr + "\n");
-            out.write("Events: " + TAB + nEventsStr + "\n");
-            out.write("Duration: " + TAB + durationStr + "\n");
+            out.write("Name: " + nameStr + "\n");
+            out.write("Start Time: " + startTimeStr + "\n");
+//            out.write("End Time: " + endTimeStr + "\n");
+            out.write("Events: " + nEventsStr + "\n");
+            out.write("Duration: " + durationStr + "\n");
 
             // Loop over events
             String line, note;
