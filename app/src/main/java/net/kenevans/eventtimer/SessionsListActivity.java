@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -238,6 +239,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         androidx.appcompat.app.AlertDialog.Builder builder =
                 new androidx.appcompat.app.AlertDialog.Builder(this);
         final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         input.setText(dateFormat.format(new Date()));
         builder.setView(input);
 
@@ -456,7 +458,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             long startTime = session.getFirstEventTime();
             long endTime = session.getEndTime();
             String startTimeStr = dateFormat.format(startTime);
-            String endTimeStr = dateFormat.format(endTime);
+//            String endTimeStr = dateFormat.format(endTime);
             String sessionName = session.getName();
             String nameStr = sessionName;
             if (sessionName == null || sessionName.length() == 0) {
@@ -467,19 +469,22 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
             nEventsStr = String.format(Locale.US, "%d", nEvents);
             String durationStr = session.getDuration();
             out.write("Name:" + TAB + nameStr + "\n");
-            out.write("Start Time:" + TAB + startTimeStr + TAB + startTime +
-                    "\n");
-            out.write("End Time: " + TAB + endTimeStr + TAB + endTime + "\n");
+            out.write("Start Time:" + TAB + startTimeStr + "\n");
+//            out.write("End Time: " + TAB + endTimeStr + "\n");
             out.write("Events: " + TAB + nEventsStr + "\n");
             out.write("Duration: " + TAB + durationStr + "\n");
 
             // Loop over events
             String line, note;
             long time;
+            EventEx eventEx;
             for (Event event : session.getEventList()) {
                 time = event.getTime();
+                eventEx = new EventEx(mDbAdapter, event);
+                durationStr = "[" + eventEx.getDuration() + "]";
                 line = summaryDateFormat.format(time) + " ";
                 note = event.getNote();
+                line += String.format(Locale.US, "%8s ", durationStr);
                 line += note + "\n";
                 out.write(line);
             }

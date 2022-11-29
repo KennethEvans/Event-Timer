@@ -28,7 +28,13 @@ public class EventEx extends Event {
         if (mSession == null) {
             return info;
         }
-        String elapsedStr = "Elapsed Time: ";
+        String elapsedStr = getDuration();
+        info += "\n" + elapsedStr;
+        return info;
+    }
+
+    public String getDuration() {
+        String elapsedStr;
         // Find the event with the same id
         Event event = null;
         // Find the position in the list
@@ -43,15 +49,14 @@ public class EventEx extends Event {
         if (pos == -1) {
             Log.d(TAG, "EventEx.toString() failed to find event="
                     + super.toString());
-            return info;
+            return "NA";
         } else if (pos == 0) {
-            elapsedStr += Utils.getDurationString(0, 0);
+            elapsedStr = Utils.getDurationString(0, 0);
         } else {
             Event prev = mSession.getEventList().get(pos - 1);
-            elapsedStr += Utils.getDurationString(prev.getTime(),
+            elapsedStr = Utils.getDurationString(prev.getTime(),
                     event.getTime());
         }
-        info += "\n" + elapsedStr;
-        return info;
+        return elapsedStr;
     }
 }

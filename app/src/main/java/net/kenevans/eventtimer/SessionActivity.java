@@ -211,6 +211,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         if (mCurrentSession.getName() != null) {
             input.setText("");
         }
