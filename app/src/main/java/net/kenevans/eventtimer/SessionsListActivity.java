@@ -173,40 +173,41 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        if (item.getItemId() == R.id.menu_discard) {
+        if (id == R.id.menu_discard) {
             promptDiscardSession();
             return true;
-        } else if (item.getItemId() == R.id.menu_save_summaries) {
+        } else if (id == R.id.menu_save_summaries) {
             saveSummaries();
             return true;
-        } else if (item.getItemId() == R.id.menu_save) {
+        } else if (id == R.id.menu_save) {
             saveSessionsToCsv();
             return true;
-        } else if (item.getItemId() == R.id.menu_check_all) {
+        } else if (id == R.id.menu_check_all) {
             setAllSessionsChecked(true);
             return true;
-        } else if (item.getItemId() == R.id.menu_check_none) {
+        } else if (id == R.id.menu_check_none) {
             setAllSessionsChecked(false);
             return true;
-        } else if (item.getItemId() == R.id.menu_session_from_cvs) {
+        } else if (id == R.id.menu_session_from_cvs) {
             promptAddSessionFromCsvFile();
             return true;
-        } else if (item.getItemId() == R.id.info) {
+        } else if (id == R.id.info) {
             info();
             return true;
-        } else if (item.getItemId() == R.id.help) {
+        } else if (id == R.id.help) {
             showHelp();
             return true;
-        } else if (item.getItemId() == R.id.menu_save_database) {
+        } else if (id == R.id.menu_save_database) {
             saveDatabase();
             return true;
-        } else if (item.getItemId() == R.id.menu_replace_database) {
+        } else if (id == R.id.menu_replace_database) {
             promptReplaceDatabase();
             return true;
-        } else if (item.getItemId() == R.id.choose_data_directory) {
+        } else if (id == R.id.choose_data_directory) {
             chooseDataDirectory();
             return true;
         }

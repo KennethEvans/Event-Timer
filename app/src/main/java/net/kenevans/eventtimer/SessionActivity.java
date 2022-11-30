@@ -1,5 +1,7 @@
 package net.kenevans.eventtimer;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,6 +19,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -148,7 +151,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
 //        Log.d(TAG, this.getClass().getSimpleName() + " onCreateOptionsMenu");
 //        Log.d(TAG, "    mPlaying=" + mPlaying);
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main_menu, menu);
+        getMenuInflater().inflate(R.menu.menu_session, menu);
         return true;
     }
 
@@ -157,6 +160,9 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         int id = item.getItemId();
         if (id == android.R.id.home) {
             onBackPressed();
+            return true;
+        } else if (id == R.id.menu_custom_event) {
+            promptForCustomEvent();
             return true;
         }
         return false;
@@ -211,7 +217,9 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         if (mCurrentSession.getName() != null) {
             input.setText("");
         }
@@ -273,13 +281,59 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         mTextViewEvent.setText(infoStr);
     }
 
+    private void promptForCustomEvent() {
+        final Calendar date = Calendar.getInstance();
+        new DatePickerDialog(this, (view, year, monthOfYear, dayOfMonth) -> {
+            date.set(year, monthOfYear, dayOfMonth);
+            new TimePickerDialog(SessionActivity.this,
+                    (view1, hourOfDay, minute) -> {
+                        date.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                        date.set(Calendar.MINUTE, minute);
+                        date.set(Calendar.SECOND, 0);
+                        date.set(Calendar.MILLISECOND, 0);
+                        setNewCustomEvent(date);
+                    }, date.get(Calendar.HOUR_OF_DAY),
+                    date.get(Calendar.MINUTE), false).show();
+        }, date.get(Calendar.YEAR), date.get(Calendar.MONTH),
+                date.get(Calendar.DATE)).show();
+    }
+
+
+    private void setNewCustomEvent(Calendar cal) {
+        Log.d(TAG, this.getClass().getSimpleName() + " setEventNote");
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+        builder.setView(input);
+        builder.setTitle("Enter the new note");
+        // Set up the buttons
+        builder.setPositiveButton(android.R.string.ok,
+                (dialog, which) -> {
+                    dialog.dismiss();
+                    String note = input.getText().toString();
+                    mCurrentSession.addEvent(mDbAdapter,
+                            mCurrentSession.getId(), cal.getTimeInMillis(),
+                            note);
+                    mCurrentSession = Session.getSessionFromDb(mDbAdapter,
+                            mCurrentSession.getId());
+                    updateInfo();
+                    resetListView();
+                });
+        builder.setNegativeButton(android.R.string.cancel,
+                (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
     private void setEventNote(Event event) {
         Log.d(TAG, this.getClass().getSimpleName() + " setEventNote");
         if (event == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT |
-                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         if (event.getNote() != null) {
             input.setText(event.getNote());
         }
@@ -374,13 +428,15 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         }
         if (mCurrentSession == null) {
             Log.d(TAG, "resetListView: mCurrentSession is null");
-            ArrayAdapter<EventEx> adapter = (ArrayAdapter<EventEx>) mListView.getAdapter();
+            ArrayAdapter<EventEx> adapter =
+                    (ArrayAdapter<EventEx>) mListView.getAdapter();
             if (adapter != null) adapter.clear();
             return;
         }
         if (mCurrentSession.getEventList() == null) {
             Log.d(TAG, "resetListView: mCurrentSession.getEventList() is null");
-            ArrayAdapter<EventEx> adapter = (ArrayAdapter<EventEx>) mListView.getAdapter();
+            ArrayAdapter<EventEx> adapter =
+                    (ArrayAdapter<EventEx>) mListView.getAdapter();
             if (adapter != null) adapter.clear();
             return;
         }
