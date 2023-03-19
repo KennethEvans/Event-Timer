@@ -1,6 +1,8 @@
 package net.kenevans.eventtimer;
 
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,10 +12,14 @@ import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.text.InputType;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -180,6 +186,9 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         if (id == R.id.menu_discard) {
             promptDiscardSession();
             return true;
+        } else if (id == R.id.menu_copy_summaries) {
+            copySummaries();
+            return true;
         } else if (id == R.id.menu_save_summaries) {
             saveSummaries();
             return true;
@@ -239,11 +248,47 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                 + " thread=" + Thread.currentThread());
         androidx.appcompat.app.AlertDialog.Builder builder =
                 new androidx.appcompat.app.AlertDialog.Builder(this);
+        LinearLayout ll = new LinearLayout(this);
+        int padding = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                10,
+                getResources().getDisplayMetrics()
+        );
+        ll.setPadding(padding, padding, padding, padding);
+        ll.setOrientation(LinearLayout.VERTICAL);
+        ll.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams llParam = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        llParam.gravity = Gravity.CENTER;
+        ll.setLayoutParams(llParam);
+
+        llParam =
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+        llParam.gravity = Gravity.CENTER;
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        input.setText(dateFormat.format(new Date()));
-        builder.setView(input);
+        input.setText(dateOnlyFormat.format(new Date()));
+        ll.addView(input);
 
+        CheckBox cb = new CheckBox(this);
+        cb.setChecked(false);
+        cb.setText(R.string.next_day);
+        cb.setOnCheckedChangeListener((button, isChecked) -> {
+            Log.d(TAG, "onCheckedChanged: isChecked=" + isChecked);
+            if(isChecked) {
+                Date date = new Date();
+                long ms = date.getTime() + 86400000;
+                date.setTime(ms);
+                input.setText(dateOnlyFormat.format(date));
+            } else {
+                input.setText(dateOnlyFormat.format(new Date()));
+            }
+        });
+        ll.addView(cb);
+
+        builder.setView(ll);
         builder.setTitle("Enter the new session name");
         // Set up the buttons
         builder.setPositiveButton(android.R.string.ok,
@@ -361,6 +406,80 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
     }
 
     /**
+     * Copies the selected sessions summaries to the clipboard.
+     */
+    public void copySummaries() {
+        if (mDbAdapter == null) {
+            Log.d(TAG, "copySummaries: database adapter is null");
+        }
+        ArrayList<SessionDisplay> checkedSessions = mSessionListAdapter
+                .getCheckedSessions();
+        if (checkedSessions.size() == 0) {
+            Utils.errMsg(this, "There are no sessions to copy");
+            return;
+        }
+        int nErrors = 0;
+        long sessionId;
+        Session session = null;
+        StringBuilder errMsg = new StringBuilder("Error copying summaries:\n");
+        StringBuilder sb = new StringBuilder();
+        for (SessionDisplay sessionDisplay : checkedSessions) {
+            try {
+                sessionId = sessionDisplay.getId();
+                session = Session.getSessionFromDb(mDbAdapter, sessionId);
+                long startTime = session.getFirstEventTime();
+                String startTimeStr = dateFormat.format(startTime);
+//            String endTimeStr = dateFormat.format(endTime);
+                String sessionName = sessionDisplay.getName();
+                String nameStr = sessionName;
+                if (sessionName == null || sessionName.length() == 0) {
+                    nameStr = "Not Named";
+                }
+                int nEvents = session.getEventList().size();
+                String nEventsStr;
+                nEventsStr = String.format(Locale.US, "%d", nEvents);
+                String durationStr = sessionDisplay.getDuration();
+                sb.append("Name: ").append(nameStr).append("\n");
+                sb.append("Start Time: ").append(startTimeStr).append("\n");
+                sb.append("Events: ").append(nEventsStr).append("\n");
+                sb.append("Duration: ").append(durationStr).append("\n");
+
+                // Loop over events
+                String line, note;
+                long time;
+                EventEx eventEx;
+                for (Event event : session.getEventList()) {
+                    time = event.getTime();
+                    eventEx = new EventEx(mDbAdapter, event);
+                    durationStr = "[" + eventEx.getDuration() + "]";
+                    line = summaryDateFormat.format(time) + " ";
+                    note = event.getNote();
+                    line += String.format(Locale.US, "%8s ", durationStr);
+                    line += note + "\n";
+                    sb.append(line);
+                }
+                if(checkedSessions.size() > 1) {
+                    sb.append("\n");
+                }
+            } catch (Exception ex) {
+                nErrors++;
+                if (session != null) {
+                    errMsg.append("  ").append(session.getName());
+                    errMsg.append("\n");
+                }
+            }
+        }
+        if (nErrors > 0) {
+            Utils.errMsg(this, errMsg.toString());
+        }
+        ClipboardManager cbm =
+                (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData data = ClipData.newPlainText("Session Summaries",
+                sb.toString());
+        cbm.setPrimaryClip(data);
+    }
+
+    /**
      * Saves the selected sessions as tab-delimited CSV.
      */
     public void saveSessionsToCsv() {
@@ -457,7 +576,6 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         try {
             session = Session.getSessionFromDb(mDbAdapter, sessionId);
             long startTime = session.getFirstEventTime();
-            long endTime = session.getEndTime();
             String startTimeStr = dateFormat.format(startTime);
 //            String endTimeStr = dateFormat.format(endTime);
             String sessionName = session.getName();

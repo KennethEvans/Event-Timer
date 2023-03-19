@@ -98,6 +98,12 @@ interface IConstants {
             new SimpleDateFormat("E HH:mm:ss", Locale.US);
 
     /**
+     * The formatter to use for formatting title for new sessions.
+     */
+    SimpleDateFormat dateOnlyFormat =
+            new SimpleDateFormat("E MMM d yyyy", Locale.US);
+
+    /**
      * The formatter to use for formatting session dates.
      */
     SimpleDateFormat csvDateFormat =

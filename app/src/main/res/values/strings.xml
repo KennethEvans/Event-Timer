@@ -25,6 +25,8 @@
     <string name="menu_merge">Merge</string>
     <string name="menu_split">Split</string>
     <string name="menu_save">Save Sessions</string>
+    <string name="menu_copy">Copy Summaries</string>
+    <string name="next_day">Use next day</string>
     <string name="menu_custom">Add Custom Event</string>
     <string name="menu_save_summaries">Save Summaries</string>
     <string name="menu_session_manager">Session Manager</string>
@@ -44,6 +46,8 @@
     <string name="stop">Stop</string>
     <string name="record">Record</string>
     <string name="event_info">Time: %1$s\nStart Time: %2$s\nEnd Time: %3$s\nEvents: %4$s\nElapsed Time: %5$s\n</string>
+    <string name="clipboard_written">Summaries were copied to the Clipboard</string>
+
 
     <!-- Info/Help -->
     <string name="help_url_not_found">Cannot find Help URL</string>

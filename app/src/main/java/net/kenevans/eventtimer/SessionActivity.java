@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -166,6 +167,15 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void onBackPressed() {
+        // This seems to be necessary with Android 12
+        // Otherwise onDestroy is not called
+        Log.d(TAG, this.getClass().getSimpleName() + ": onBackPressed");
+        finish();
+        super.onBackPressed();
     }
 
     @Override
