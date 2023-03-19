@@ -1,9 +1,9 @@
 package net.kenevans.eventtimer;
 
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -17,6 +17,7 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -41,6 +42,7 @@ import java.util.Locale;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
@@ -277,7 +279,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
         cb.setText(R.string.next_day);
         cb.setOnCheckedChangeListener((button, isChecked) -> {
             Log.d(TAG, "onCheckedChanged: isChecked=" + isChecked);
-            if(isChecked) {
+            if (isChecked) {
                 Date date = new Date();
                 long ms = date.getTime() + 86400000;
                 date.setTime(ms);
@@ -298,7 +300,15 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
-        builder.show();
+        androidx.appcompat.app.AlertDialog alertDialog = builder.create();
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            return false;
+        });
+        alertDialog.show();
     }
 
     private void addSession(String name) {
@@ -458,7 +468,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                     line += note + "\n";
                     sb.append(line);
                 }
-                if(checkedSessions.size() > 1) {
+                if (checkedSessions.size() > 1) {
                     sb.append("\n");
                 }
             } catch (Exception ex) {
@@ -846,6 +856,7 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                 androidx.appcompat.app.AlertDialog.Builder builder =
                         new androidx.appcompat.app.AlertDialog.Builder(this);
                 final EditText input = new EditText(this);
+                input.setInputType(InputType.TYPE_CLASS_TEXT);
                 if (session.getName() != null) {
                     input.setText(session.getName());
                 }
@@ -866,7 +877,15 @@ public class SessionsListActivity extends AppCompatActivity implements IConstant
                         });
                 builder.setNegativeButton(android.R.string.cancel,
                         (dialog, which) -> dialog.cancel());
-                builder.show();
+                AlertDialog alertDialog = builder.create();
+                input.setOnEditorActionListener((v, actionId, event) -> {
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                        return true;
+                    }
+                    return false;
+                });
+                alertDialog.show();
             }
         }
     }

@@ -2,6 +2,7 @@ package net.kenevans.eventtimer;
 
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,6 +13,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -23,7 +25,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -226,7 +227,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        final EditText input = new EditText(this);
+        final EditText input  = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
                 | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
@@ -251,7 +252,15 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
-        builder.show();
+        AlertDialog alertDialog = builder.create();
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            return false;
+        });
+        alertDialog.show();
     }
 
     private void startTimer() {
@@ -313,7 +322,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         Log.d(TAG, this.getClass().getSimpleName() + " setEventNote");
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT
+            input.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
                 | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         builder.setView(input);
@@ -333,7 +342,15 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
-        builder.show();
+        AlertDialog alertDialog = builder.create();
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            return false;
+        });
+        alertDialog.show();
     }
 
     private void setEventNote(Event event) {
@@ -365,7 +382,15 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
-        builder.show();
+        AlertDialog alertDialog = builder.create();
+        input.setOnEditorActionListener((v, actionId, event1) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            return false;
+        });
+        alertDialog.show();
     }
 
     private void renameSession(Session session) {
@@ -373,6 +398,7 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
         if (session == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
         if (session.getName() != null) {
             input.setText(session.getName());
         }
@@ -403,8 +429,15 @@ public class SessionActivity extends AppCompatActivity implements IConstants {
                 });
         builder.setNegativeButton(android.R.string.cancel,
                 (dialog, which) -> dialog.cancel());
-
-        builder.show();
+        AlertDialog alertDialog = builder.create();
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            return false;
+        });
+        alertDialog.show();
     }
 
     /***
